@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+package pb;
+
+option go_package = "github.com/ardanlabs/python-go/grpc/pb";
+
+message Metric {
+    google.protobuf.Timestamp time = 1;
+    string name = 2;
+    double value = 3;
+}
+
+message OutliersRequest {
+    repeated Metric metrics = 1;
+}
+
+message OutliersResponse {
+    repeated int32 indices = 1;
+}
+
+service Outliers {
+    rpc Detect(OutliersRequest) returns (OutliersResponse) {}
+}
