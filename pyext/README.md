@@ -1,26 +1,24 @@
 # Go ↔ Python: Part II Writing Python Extension Library in Go
 
-**WIP: Ignore for now**
-
 ### Introduction
 
 In [the previous post][FIXME] we saw how a Go process can call a Python process
-using [gRPC][https://grpc.io/]. In this post we're going to flip the roles,
+using [gRPC](https://grpc.io/). In this post we're going to flip the roles,
 Python is going to call a Go function.
 
 Python has a long tradition of writing extension modules, mostly in C, to speed
 up some parts of the code. There are several way of writing extension modules
 to Python, from the built-in
-[API][https://docs.python.org/3/extending/index.html] to frameworks such as
+[API](https://docs.python.org/3/extending/index.html) to frameworks such as
 [SWIG](http://www.swig.org/),
-[pybind11](https://pybind11.readthedocs.io/en/stable/) and others.
+[pybind11](https://pybind11.readthedocs.io/) and others.
 
 We're going to take a simpler approach, and use Python's ability to call
 function from shared libraries using the
 [ctypes](https://docs.python.org/3/library/ctypes.html) module.
 
 _Note: ctypes uses [libffi](https://github.com/libffi/libffi) under the hood.
-If you want to read so really scary C code - head over and start reading._
+If you want to read so really scary C code - head over and start reading.
 
 We'll create a shared library from the Go code using the `-buildmode=c-shared`
 build flag.
@@ -51,7 +49,6 @@ You'd like to verify that all the files in the library are valid by matching
 their digital signature with the one in the file. File can be damaged while
 downloaded or changed by malicious code.
 
-
 ### Go Code
 
 I'm not going to show the Go code here, if you're curious - see
@@ -73,7 +70,7 @@ func CheckSignatures(rootDir string) error {
 
 To expose Go code to shared library, you need 4 things:
 - import the `C` package (aka [cgo](https://golang.org/cmd/cgo/))
-- Use //export directives on every function you want to expose
+- Use `//export` directives on every function you want to expose
 - Have an empty `main`
 - Build with `-buildmode=c-shared` flag
 
@@ -99,7 +96,7 @@ To expose Go code to shared library, you need 4 things:
 ```
 
 Highlights:
-- In line 03 we importing the "C" library.
+- In line 03 we import the "C" library.
 - In line 05 we mark `verify` as exported using the `//export` comment. *Don't*
   add a space between `//` to `export`
 - `verify` get a `*C.char` as parameter and returns `*C.char`. This is C's string
@@ -117,16 +114,14 @@ $ go build -buildmode=c-shared -o _checksig.so
 
 Listing 3 shows the command to generate the shred library `_checksig.so`.
 
-_Note: The reason for using `_` is to avoid name collison with `checksig.py`
+_Note: The reason for using `_` is to avoid name collision with `checksig.py`
 that we'll show later. When you run `import checksig`, Python will first try to
-load the shared library and not the Python file._
+load the shared library and not the Python file.
 
-And now we can try calling `verify` from Python. In the code repository you'll
-find
-[logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/logs.tar.bz2)
+And now we can try calling `verify` from Python. In the code repository you'll find [logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/logs.tar.bz2)
 which contains some log files and a `sha1sum.txt` file. **The signature for
 `http08.log` is intentionally wrong.**
-I've extracted the archive to `/var/logs`, if you want to do the same - run the
+I've extracted the archive to `/tmp/logs`, if you want to do the same - run the
 command:
 
 ```
@@ -151,12 +146,12 @@ when I have a working version I write the code in a file.
 Let's go over line by line:
 - 01: Import the `ctypes` module
 - 02: Load the shared library
-- 03: Assing a variable to the `verify` function
-- 04, 05: Tell ctypes the paramter types and return type of `verify`. Shared
+- 03: Assign a variable to the `verify` function
+- 04, 05: Tell ctypes the parameter types and return type of `verify`. Shared
   libraries function are just a name, you should know beforehand what are the
   parameters - usually by including a C header file
 - 06: Call verify. Since we're dealing with C we convert the `str` (Python's
-  string) parmeter to `bytes` which is a C `char *`
+  string) parameter to `bytes` which is a C `char *`
 - 07: Print the output. The return type from C is `char *`, or `bytes` in
   Python, we use `decode` to convert it back to `str`
 
@@ -186,10 +181,9 @@ Lucky for us, Python is taking ownership on the allocated string and will free
 it with it's garbage collector. FIXME: Need to verify this
 
 In other cases you might not be that lucky, and then either you'll leak memory
-or "double free" a pointer leading to a crash. Make sure to read carfully the
+or "double free" a pointer leading to a crash. Make sure to read carefully the
 documentation of all the functions you're using and monitor your application
 for memory usage.
-
 
 ### Python Module
 
@@ -244,18 +238,17 @@ _Note: Python's naming conventions differ from Go. Most Python code is
 following the standard defined in
 [PEP-8](https://www.python.org/dev/peps/pep-0008/).
 
-
 ### Packaging
 
 One of the great things about Go is the packaging. Once you've built the
 executable - you can copy it over and it'll work™. In the Python world things
 are different, you need a Python interpreter on the machine running your code
-and install an external dependecies there as well.
+and install external dependencies there as well.
 
-What happend in Python when you have an extension library which is compiled to platform specific code? There are two options:
+What happened in Python when you have an extension library which is compiled to platform specific code? There are two options:
 1. You can ship a platform specific package called a `wheel`
 2. You can have the installer compile the Go code. Meaning they'll need a Go
-   compilter on the machine running the application
+   compiler on the machine running the application
 
 Since this problem is common to any extension library, there's a standard way
 in Python that addresses both problems above. You write a `setup.py` which
@@ -265,7 +258,7 @@ machine that matches a wheel architecture - they'll get the binary package,
 otherwise Python will download the source distribution and will try to compile
 it.
 
-Python has built in support for extension written in C, C++ and SWIG. We'll
+Python has built-in support for extensions written in C, C++ and SWIG. We'll
 have to write our own command for building Go extension.
 
 **Listing 6: setup.py**
@@ -301,19 +294,19 @@ have to write our own command for building Go extension.
 29 )
 ```
 
-In line 09 we define our command to build extension that uses the Go compiler.
+In line 09 we define our command to build an extension that uses the Go compiler.
 Lines 12-14 defines the command to run and line 15 runs this command as an
-external command (Python's `subprocess` is like `os/exec` in Go).
+external command (Python's `subprocess` is like Go’s `os/exec`).
 
 In line 20 we call the setup command, giving the package name in line 21 and a
 version in line 22. In line 23 we define the Python modules (without the `.py`
 extension) and in lines 24-26 we define the extension module (the Go code).
-In line 27 we override the built-in 'build_ext` command with out `build_ext`
+In line 27 we override the built-in 'build_ext` command with our `build_ext`
 command that builds Go code. In line 28 we specify the package is not zip safe
 since it contains shared libraries.
 
 Another file we need to create is `MANIFEST.in`, it's a file that defines all
-the extra files that need to be package in a source distribution. 
+the extra files that need to be packaged in a source distribution. 
 
 **Listing 7: MANIFEST.in**
 ```
@@ -341,16 +334,15 @@ checksig-0.1.0.tar.gz
 ```
 
 The wheel binary package (with `.whl` extension) has the platform information
-in it's name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation
-system and the architecture - like's Go's `GOOS` and `GOARCH`.
+in its name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation
+system and the architecture - like Go's `GOOS` and `GOARCH`.
 
 Now you can use Python's package manager,
 [pip](https://packaging.python.org/tutorials/installing-packages/) to install
-these package. You can also upload these packages to Python package index
+these packages. You can also upload these packages to Python package index
 [PyPI](https://pypi.org/) using tools such as
 [twine](https://github.com/pypa/twine), then people will be all to run `pip
 install checksig` and use your package.
-
 
 ### Conclusion
 
