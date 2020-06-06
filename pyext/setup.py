@@ -1,3 +1,4 @@
+"""Setup for checksig package"""
 from distutils.errors import CompileError
 from subprocess import call
 
@@ -6,6 +7,7 @@ from setuptools.command.build_ext import build_ext
 
 
 class build_go_ext(build_ext):
+    """Custom command to build extension from Go source files"""
     def build_extension(self, ext):
         ext_path = self.get_ext_fullpath(ext.name)
         cmd = ['go', 'build', '-buildmode=c-shared', '-o', ext_path]

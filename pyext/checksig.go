@@ -12,8 +12,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func fileSig(path string) (string, error) {
-	file, err := os.Open(path)
+// fileSig return fileName sha1 digital signature
+func fileSig(fileName string) (string, error) {
+	file, err := os.Open(fileName)
 	if err != nil {
 		return "", err
 	}
@@ -28,7 +29,7 @@ func fileSig(path string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-// Parse signature file. Return map of path->signature
+// parseSigFile parses the signature file, it returns a map of path->signature
 func parseSigFile(r io.Reader) (map[string]string, error) {
 	sigs := make(map[string]string)
 	scanner := bufio.NewScanner(r)
@@ -51,7 +52,8 @@ func parseSigFile(r io.Reader) (map[string]string, error) {
 	return sigs, nil
 }
 
-// CheckSignatures checks sha1 signatures for file in a directory, returns a error if there's no match
+// CheckSignatures checks sha1 signatures for files in a directory in parallel,
+// returns a error if there's no match
 // There should be a "sha1sum.txt" file in the directory in the format
 // 0c4ccc63a912bbd6d45174251415c089522e5c0e75286794ab1f86cb8e2561fd  taxi-01.csv
 // f427b5880e9164ec1e6cda53aa4b2d1f1e470da973e5b51748c806ea5c57cbdf  taxi-02.csv
