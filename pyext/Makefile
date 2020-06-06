@@ -3,3 +3,4 @@ _checksig.so: *.go
 
 clean:
 	-rm *.h *.so
+	-rm -r build/ checksig.egg-info/ dist/
