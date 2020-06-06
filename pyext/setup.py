@@ -25,4 +25,5 @@ setup(
         Extension('_checksig', ['checksig.go', 'export.go'])
     ],
     cmdclass={'build_ext': build_go_ext},
+    zip_safe=False,
 )
