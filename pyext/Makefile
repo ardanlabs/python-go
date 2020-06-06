@@ -4,3 +4,6 @@ _checksig.so: *.go
 clean:
 	-rm *.h *.so
 	-rm -r build/ checksig.egg-info/ dist/
+
+test-dist:
+	docker build -f Dockerfile.test-dist .

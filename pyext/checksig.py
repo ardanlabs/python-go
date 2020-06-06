@@ -20,4 +20,5 @@ class SignatureError(Exception):
 def check_signature(root_dir):
     res = verify(root_dir.encode('utf-8'))
     if res is not None:
-        raise SignatureError(res.decode('utf-8'))
+        msg = res.decode('utf-8')
+        raise SignatureError(msg)
