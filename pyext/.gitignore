@@ -1,0 +1,6 @@
+*.h
+*.so
+build/
+checksig.egg-info/
+dist/
+logs.tar.bz2
