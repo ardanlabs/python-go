@@ -6,7 +6,10 @@ RUN ln -s /go/bin/go /usr/local/bin
 RUN python -m pip install --upgrade pip
 COPY logs.tar.bz2 /tmp
 RUN tar xjf /tmp/logs.tar.bz2 -C /tmp
-COPY . /code/
+WORKDIR /code
+COPY . .
+RUN python setup.py sdist
+RUN python setup.py bdist_wheel
 # RUN python -m pip install /code/dist/checksig-0.1.0-cp38-cp38-linux_x86_64.whl
 RUN python -m pip install /code/dist/checksig-0.1.0.tar.gz
 COPY example.py /tmp
