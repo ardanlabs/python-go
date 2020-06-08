@@ -14,7 +14,9 @@ so_file = here / ('_checksig' + ext_suffix)
 so = ctypes.cdll.LoadLibrary(so_file)
 verify = so.verify
 verify.argtypes = [ctypes.c_char_p]
-verify.restype = ctypes.c_char_p
+verify.restype = ctypes.c_void_p
+free = so.free
+free.argtypes = [ctypes.c_void_p]
 
 
 class SignatureError(Exception):
@@ -28,5 +30,6 @@ def check_signature(root_dir):
     """
     res = verify(root_dir.encode('utf-8'))
     if res is not None:
-        msg = res.decode('utf-8')
+        msg = ctypes.string_at(res).decode('utf-8')
+        free(res)
         raise SignatureError(msg)
