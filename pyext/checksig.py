@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 from distutils.sysconfig import get_config_var
 
-# Find out where the shared library is and
+# Find out where the shared library is at
 ext_suffix = get_config_var('EXT_SUFFIX')
 here = Path(__file__).absolute().parent
 so_file = here / ('_checksig' + ext_suffix)
@@ -19,11 +19,6 @@ free = so.free
 free.argtypes = [ctypes.c_void_p]
 
 
-class SignatureError(Exception):
-    """SignatureError is an error in signature"""
-    pass
-
-
 def check_signature(root_dir):
     """Check (in parallel) digital signature of all files in root_dir.
     We assume there's a sha1sum.txt file under root_dir
@@ -32,4 +27,4 @@ def check_signature(root_dir):
     if res is not None:
         msg = ctypes.string_at(res).decode('utf-8')
         free(res)
-        raise SignatureError(msg)
+        raise ValueError(msg)

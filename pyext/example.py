@@ -1,6 +1,6 @@
-from checksig import check_signature, SignatureError
+from checksig import check_signature
 
 try:
     check_signature('/tmp/logs')
-except SignatureError as err:
+except ValueError as err:
     raise SystemExit(f'error: {err}')
