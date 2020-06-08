@@ -37,13 +37,13 @@ func dummyData() []*pb.Metric {
 	out := make([]*pb.Metric, size)
 	t := time.Date(2020, 5, 22, 14, 13, 11, 0, time.UTC)
 	for i := 0; i < size; i++ {
-		m := &pb.Metric{
+		m := pb.Metric{
 			Time: Timestamp(t),
 			Name: "CPU",
 			// normally we're below 40% CPU utilization
 			Value: rand.Float64() * 40,
 		}
-		out[i] = m
+		out[i] = &m
 		t.Add(time.Second)
 	}
 	// Create some outliers
