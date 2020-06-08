@@ -1,6 +1,10 @@
 from checksig import check_signature
 
+root_dir = '/tmp/logs'
+
+print(f'checking {root_dir!r}')
 try:
-    check_signature('/tmp/logs')
+    check_signature(root_dir)
+    print('OK')
 except ValueError as err:
-    raise SystemExit(f'error: {err}')
+    print(f'error: {err}')
