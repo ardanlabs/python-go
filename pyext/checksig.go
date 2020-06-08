@@ -13,7 +13,7 @@ import (
 )
 
 // CheckSignatures checks sha1 signatures for files in a directory concurrently
-// and returns a error if a signature for a given file does not match.
+// and returns an error if a signature for a given file does not match.
 // There should be a "sha1sum.txt" file in the directory with the format:
 // 0c4ccc63a912bbd6d45174251415c089522e5c0e75286794ab1f86cb8e2561fd  taxi-01.csv
 // f427b5880e9164ec1e6cda53aa4b2d1f1e470da973e5b51748c806ea5c57cbdf  taxi-02.csv
