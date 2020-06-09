@@ -3,7 +3,7 @@ all:
 
 
 _checksig.so: *.go
-	echo go build -buildmode=c-shared -o $@
+	go build -buildmode=c-shared -o $@
 
 so: _checksig.so
 
