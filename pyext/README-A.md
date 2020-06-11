@@ -36,7 +36,7 @@ To speed this process up, we'll calculate the digital signature of each file in 
 
 ### Go Code
 
-I'm not going to break down the Go source code here, if you're curious to see all of it, check [here](https://github.com/ardanlabs/python-go/blob/master/pyext/part-1/checksig.go).
+I'm not going to break down the Go source code here, if you're curious to see all of it, check [here](https://github.com/ardanlabs/python-go/blob/master/pyext/checksig.go).
 
 The main Go function `CheckSignature`
 
@@ -69,19 +69,17 @@ Apart from the Go toolchain, you'll also need a C compiler (such as `gcc` on you
 05 //export verify
 06 func verify(root *C.char) *C.char {
 07 	rootDir := C.GoString(root)
-08 	err := CheckSignatures(rootDir)
-09 	if err == nil {
-10 		return nil
-11 	}
-12 
-13 	str := C.CString(err.Error())
-14 	return str
-15 }
-16 
-17 func main() {}
+08 	if err := CheckSignatures(rootDir); err != nil {
+09 		return C.CString(err.Error())
+10 	}
+11 
+12 	return nil
+13 }
+14 
+15 func main() {}
 ```
 
-Listing 3 shows the `export.go` file from the project. We import “C” on line 03. Then on line 05, the `verify` function is marked to be exported to the shared library. It is important that the comment is provided exactly as is. You can see on line 06, the `verify` function accepts a C based string pointer using the C package `char` type. For Go code to work with the C string, the C package provides a `GoString` function which is used on line 07 and 11. Finally, an empty `main` function is declared at the end.
+Listing 3 shows the `export.go` file from the project. We import “C” on line 03. Then on line 05, the `verify` function is marked to be exported to the shared library. It is important that the comment is provided exactly as is. You can see on line 06, the `verify` function accepts a C based string pointer using the C package `char` type. For Go code to work with the C strings, the C package provides a `GoString` function which is used on line 07 and `CString` which is used in line 09. Finally, an empty `main` function is declared at the end.
 
 To build the shared library, you need to run the `go build` command with a special flag.
 
@@ -96,7 +94,7 @@ _Note: The reason for using `_` is to avoid name collision with the `checksig.py
 
 ### Preparing the Test Data
 
-Before we can try calling `verify` from Python, we need some data. You'll find a file called [logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/part-1/logs.tar.bz2) in the code repository. This file contains some log files and a `sha1sum.txt` file.
+Before we can try calling `verify` from Python, we need some data. You'll find a file called [logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/logs.tar.bz2) in the code repository. This file contains some log files and a `sha1sum.txt` file.
 
 _Note: **The signature for `http08.log` is intentionally wrong.**_
 

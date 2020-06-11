@@ -5,13 +5,11 @@ import "C"
 //export verify
 func verify(root *C.char) *C.char {
 	rootDir := C.GoString(root)
-	err := CheckSignatures(rootDir)
-	if err == nil {
-		return nil
+	if err := CheckSignatures(rootDir); err != nil {
+		return C.CString(err.Error())
 	}
 
-	str := C.CString(err.Error())
-	return str
+	return nil
 }
 
 func main() {}

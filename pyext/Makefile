@@ -9,12 +9,9 @@ so: _checksig.so
 
 clean:
 	-rm *.h *.so
-	-rm -r build/ checksig.egg-info/ dist/
 
-dists:
-	-rm -r dist
-	python setup.py sdist
-	python setup.py bdist_wheel
+test-a:
+	docker build -f Dockerfile.test-a .
 
-test-dist: dists
-	docker build -f Dockerfile.test-dist .
+test-b:
+	docker build -f Dockerfile.test-b .
