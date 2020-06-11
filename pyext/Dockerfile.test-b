@@ -13,4 +13,5 @@ RUN python setup.py bdist_wheel
 # RUN python -m pip install /code/dist/checksig-0.1.0-cp38-cp38-linux_x86_64.whl
 RUN python -m pip install /code/dist/checksig-0.1.0.tar.gz
 COPY example.py /tmp
-RUN python /tmp/example.py
+WORKDIR /tmp
+RUN python example.py
