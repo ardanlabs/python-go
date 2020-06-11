@@ -1,10 +1,13 @@
-name: pyext-a
+name: pyext
 on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Run test docker
+    - name: Run test docker A
       working-directory: ./pyext
       run: docker build -f Dockerfile.test-a .
+    - name: Run test docker B
+      working-directory: ./pyext
+      run: docker build -f Dockerfile.test-b .
