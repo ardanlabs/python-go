@@ -2,11 +2,11 @@
 
 ### Introduction
 
-In [the previous post][FIXME] compiled Go code to a shared library and used it from Python. In this post we're going to finish the development process by writing a Python module that hides the low level details of working with a shared library and then package this code as a Python package. 
+In [the previous post][FIXME] we compiled Go code to a shared library and used it from Python. In this post we're going to finish the development process by writing a Python module that hides the low level details of working with a shared library and then package this code as a Python package. 
 
 ### Python Module
 
-After we verified that out code works in the Python interactive prompt (aka [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop)), we can write a module. This module will have a Pythonic API and will hide the low level details of working with the shared library.
+After we verified that out code works in the Python interactive prompt (aka [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop)), we can write a Python module. This module will have a Pythonic API and will hide the low level details of working with the shared library.
 
 **Listing 1: checksig.py**
 ```
@@ -56,9 +56,9 @@ What happens in Python when you have an extension library which is compiled to p
 1. You can ship a platform specific package called a `wheel`
 2. You can have the installer compile the Go code. Meaning the user will need a Go compiler on the machine running the application
 
-Since this problem is common to any extension library, there's a standard way in Python that addresses both problems above. You write a `setup.py` which defines the Python project, and then generate a `wheel` distribution and a source (called `sdist`) distribution. If the user installs your package on a machine that matches a wheel architecture - Python's installer will install the binary package, otherwise the installer will download the source distribution and will try to compile it.
+Since this problem is common to any extension library, there's a standard way in Python that addresses both problems above. You write a `setup.py` which defines the Python package, and then generate a `wheel` distribution and a source (called `sdist`) distribution. If the user installs your package on a machine that matches a wheel architecture - Python's installer will install the binary package, otherwise the installer will download the source distribution and will try to compile it.
 
-Python has built-in support for extensions written in C, C++ and SWIG, but not for Go. We will write our own command for building the Go extension.
+Python has built-in support for extensions written in C, C++ and [SWIG](http://www.swig.org/), but not for Go. We will write our own command for building the Go shared library.
 
 **Listing 2: setup.py**
 ```
@@ -95,7 +95,7 @@ Python has built-in support for extensions written in C, C++ and SWIG, but not f
 
 In line 09 we define our command to build an extension that uses the Go compiler.  Lines 12-14 define the command to run and line 15 runs this command as an external command (Python's `subprocess` is like Go’s `os/exec`).
 
-In line 20 we call the setup command, giving the package name in line 21 and a version in line 22. In line 23 we define the Python modules (without the `.py` extension) and in lines 24-26 we define the extension module (the Go code).  In line 27 we override the built-in 'build_ext` command with our `build_ext` command that builds Go code. In line 28 we specify the package is not zip safe since it contains shared libraries.
+In line 20 we call the setup command, giving the package name in line 21 and a version in line 22. In line 23 we define the Python modules (without the `.py` extension) and in lines 24-26 we define the extension module (the Go code).  In line 27 we override the built-in 'build_ext` command with our `build_ext` command that builds Go code. In line 28 we specify the package is not zip safe since it contains a shared library.
 
 Another file we need to create is `MANIFEST.in`, it's a file that defines all the extra files that need to be packaged in a source distribution. 
 
@@ -128,13 +128,13 @@ checksig-0.1.0.tar.gz
 
 In Listing 5 we use the `ls` command to show the content of the `dist` directory.
 
-The wheel binary package (with `.whl` extension) has the platform information in its name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation system and the architecture - same as Go's `GOOS` and `GOARCH`.
+The wheel binary package (with `.whl` extension) has the platform information in its name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation system and the architecture - same as Go's `GOOS` and `GOARCH`. Since the wheel file name changes depending on the architecture it’s built on, we had to write some logic in Listing 1 lines 08-10.
 
-Now you can use Python's package manager, [pip](https://packaging.python.org/tutorials/installing-packages/) to install these packages. If you want to publish your package externally, you can upload these packages to the Python Package Index [PyPI](https://pypi.org/) using tools such as [twine](https://github.com/pypa/twine).
+Now you can use Python's package manager, [pip](https://packaging.python.org/tutorials/installing-packages/) to install these packages. If you want to publish your package, you can upload it to the Python Package Index [PyPI](https://pypi.org/) using tools such as [twine](https://github.com/pypa/twine).
 
 ### Conclusion
 
-With little effort, you hide the fact that you're using Go to extend Python and expose a Python module that has a Pythonic API. Packaging is what makes your code deployable and valuable, don't skip this step.
+With little effort, you can hide the fact you're using Go to extend Python and expose a Python module that has a Pythonic API. Packaging is what makes your code deployable and valuable, don't skip this step.
 
 If you'd like to return Python types from Go (say a `list` or a `dict`), you can use Python's [extensive C API](https://docs.python.org/3/extending/index.html) using cgo. You can have a look at the [go-python](https://github.com/sbinet/go-python) that can ease a lot of the pain of writing Python extensions in Go.
 
