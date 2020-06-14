@@ -1,12 +1,10 @@
-# Go ↔ Python: Part II Writing Python Extension Library in Go
+# Go ↔ Python: Part II Extending Python With Go
 
 ### Introduction
 
-In [the previous post][https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html] we saw how a Go process can call a Python process using gRPC. In this post we're going to flip the roles, Python is going to call a Go function.
+In [the previous post](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) we saw how a Go service can call a Python service using gRPC. Using gRPC to connect a Go and Python program together can be a great choice, but there’s a complexity price that goes with it. You need to manage one more service, deployment becomes more complex, and you need monitoring plus alerting for each service. Compared to a monolithic application, there is an order of magnitude more complexity.
 
-One solution to solve performance problems in Python, is to write the critical code in C. A lot of the scientific Python packages (such as [numpy](https://numpy.org/)) use a lot of C code and even some Fortran sprinkled for good measure.
-
-In this post, we'll build a shared library from the Go code and then use Python's [ctypes](https://docs.python.org/3/library/ctypes.html) module to call functions from this shared library.
+In this post, we're going to reduce the complexity of using gRPC by writing a shared library in Go that a Python program can consume directly. With this approach there’s no networking involved and depending on the data types, no marshalling as well. There are several approaches to calling function from a shared library in Python, we are going to  use Python's [ctypes](https://docs.python.org/3/library/ctypes.html) module.
 
 _Note: ctypes uses [libffi](https://github.com/libffi/libffi) under the hood. If you want to read some really scary C code - head over to the repo and start reading. :)_
 
@@ -14,7 +12,7 @@ In this post I'll also show my workflow that is one of the big factors in my pro
 
 ### Example: Checking the Digital Signature of Several Files in Parallel
 
-Imagine you have a directory with data files, and you need to validate the integrity of these files. The directory contains a `sha1sum.txt` file with a [sha1](https://en.wikipedia.org/wiki/SHA-1) digital signature for every file.
+Imagine you have a directory with data files, and you need to validate the integrity of these files. The directory contains a `sha1sum.txt` file with a [sha1](https://en.wikipedia.org/wiki/SHA-1) digital signature for every file. Go, with it’s concurrency primitives and ability to use all the cores of your machine, is much better suited to this task than Python.
 
 **Listing 1: sha1sum.txt**
 ```
@@ -30,13 +28,13 @@ feaf526473cb2887781f4904bd26f021a91ee9eb  httpd-08.log
 330d03af58919dd12b32804d9742b55c7ed16038  httpd-09.log
 ```
 
-Listing 1 shows an example of a digital signature file. It provides hash codes for all the different log files contained in the directory. This file can be used to verify that a log file was downloaded correctly or has not been tampered with. We will calculate the hash code of each log file and then match it against the hash code listed in the digital signature file.
+Listing 1 shows an example of a digital signature file. It provides hash codes for all the different log files contained in the directory. This file can be used to verify that a log file was downloaded correctly or has not been tampered with. We will write Go code to calculate the hash code of each log file and then match it against the hash code listed in the digital signature file.
 
 To speed this process up, we'll calculate the digital signature of each file in a separate goroutine, spreading the work across all of the CPUs on our machine.
 
 ### Go Code
 
-I'm not going to break down the Go source code here, if you're curious to see all of it, check [here](https://github.com/ardanlabs/python-go/blob/master/pyext/checksig.go).
+I'm not going to break down the Go source code here, if you're curious to see all of it, check [here](https://github.com/ardanlabs/python-go/blob/master/pyext/part-1/checksig.go).
 
 The main Go function `CheckSignature`
 
@@ -81,6 +79,7 @@ Apart from the Go toolchain, you'll also need a C compiler (such as `gcc` on you
 
 Listing 3 shows the `export.go` file from the project. We import “C” on line 03. Then on line 05, the `verify` function is marked to be exported to the shared library. It is important that the comment is provided exactly as is. You can see on line 06, the `verify` function accepts a C based string pointer using the C package `char` type. For Go code to work with the C strings, the C package provides a `GoString` function which is used on line 07 and `CString` which is used in line 09. Finally, an empty `main` function is declared at the end.
 
+
 To build the shared library, you need to run the `go build` command with a special flag.
 
 **Listing 4: Building the Shared Library**
@@ -94,7 +93,7 @@ _Note: The reason for using `_` is to avoid name collision with the `checksig.py
 
 ### Preparing the Test Data
 
-Before we can try calling `verify` from Python, we need some data. You'll find a file called [logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/logs.tar.bz2) in the code repository. This file contains some log files and a `sha1sum.txt` file.
+Before we can try calling `verify` from Python, we need some data. You'll find a file called [logs.tar.bz2](https://github.com/ardanlabs/python-go/blob/master/pyext/part-1/logs.tar.bz2) in the code repository. This file contains some log files and a `sha1sum.txt` file.
 
 _Note: **The signature for `http08.log` is intentionally wrong.**_
 
@@ -167,4 +166,4 @@ With very little code, you can use Go from Python. Unlike the previous installme
 
 I hope that you've found this style of writing code: Pure Go first, then exporting and then trying it out in an interactive session appealing. I urge you to try this workflow yourself next time you write some code.
 
-In the next installment we're going to package the Python code as a module.
+In the next installment, we’ll finish the last step of my workflow and package the Python code as a module.
