@@ -10,6 +10,8 @@ so: _checksig.so
 clean:
 	-rm *.h *.so
 
+test: test-a test-b
+
 test-a:
 	docker build -f Dockerfile.test-a .
 
