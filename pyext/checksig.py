@@ -16,7 +16,7 @@ free = so.free
 free.argtypes = [ctypes.c_void_p]
 
 
-def check_signature(root_dir):
+def check_signatures(root_dir):
     """Check (in parallel) digital signature of all files in root_dir.
     We assume there's a sha1sum.txt file under root_dir
     """
