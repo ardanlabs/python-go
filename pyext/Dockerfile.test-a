@@ -5,8 +5,7 @@ RUN curl -LO https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
 RUN tar xzf go1.14.4.linux-amd64.tar.gz
 RUN ln -s /go/bin/go /usr/local/bin
 RUN python -m pip install --upgrade pip
-COPY logs.tar.bz2 /tmp
-RUN tar xjf /tmp/logs.tar.bz2 -C /tmp
+COPY ./testdata/logs /tmp/logs
 WORKDIR /code
 COPY . .
 RUN go build -buildmode=c-shared -o _checksig.so
