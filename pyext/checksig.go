@@ -13,7 +13,7 @@ import (
 )
 
 // CheckSignatures calculates sha1 signatures for files in rootDir and compare
-// them with signature found at "sha1sum.txt" in the same directory. It'll
+// them with signatures found at "sha1sum.txt" in the same directory. It'll
 // return an error if one of the signatures don't match
 func CheckSignatures(rootDir string) error {
 	file, err := os.Open(path.Join(rootDir, "sha1sum.txt"))
