@@ -21,3 +21,7 @@ grpc-python:
 
 so:
 	go build -buildmode=c-shared -o bench.so so.go
+
+clean:
+	rm -fr server bench.so bench.h
+	rm -fr bench_pb2*.py
