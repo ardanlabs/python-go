@@ -1,0 +1,11 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "github.com/ardanlabs/python-go/pyext/bench/pb";
+
+message Empty {
+}
+
+service Bench {
+    rpc Bench(Empty) returns (Empty) {}
+}

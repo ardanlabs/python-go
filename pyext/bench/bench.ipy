@@ -1,0 +1,20 @@
+import ctypes
+from subprocess import Popen
+from time import sleep
+
+print('=== gRPC ===')
+!make grpc
+!go build -o server server.go
+srv = Popen(['./server'])
+sleep(1)  # Let the server start
+%run client.py
+# Connect once
+chan = connect('localhost', 8888)
+%timeit call(chan)
+srv.kill()
+
+print('=== ctypes ===')
+!make so
+so = ctypes.cdll.LoadLibrary('./bench.so')
+fn = so.bench
+%timeit fn()
