@@ -4,7 +4,7 @@
 
 In [the previous post](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) we saw how a Go service can call a Python service using gRPC. Using gRPC to connect a Go and Python program together can be a great choice, but there’s a complexity price that goes with it. You need to manage one more service, deployment becomes more complex, and you need monitoring plus alerting for each service. Compared to a monolithic application, there is an order of magnitude more complexity.
 
-In this post, we're going to reduce the complexity of using gRPC by writing a shared library in Go that a Python program can consume directly. With this approach there’s no networking involved and depending on the data types, no marshalling as well. Out of the several approaches to calling functions from a shared library in Python, we decided to use Python's [ctypes](https://docs.python.org/3/library/ctypes.html) module.
+In this post, we're going to reduce the complexity of using gRPC by writing a shared library in Go that a Python program can consume directly. With this approach, there’s no networking involved and depending on the data types, no marshalling as well. Out of the several approaches of calling functions from a shared library in Python, we decided to use Python's [ctypes](https://docs.python.org/3/library/ctypes.html) module.
 
 _Note: ctypes uses [libffi](https://github.com/libffi/libffi) under the hood. If you want to read some really scary C code - head over to the repo and start reading. :)_
 
@@ -12,7 +12,7 @@ I'll also show my workflow that is one of the big factors in my productivity. We
 
 ### Example: Checking the Digital Signature of Several Files in Parallel
 
-Imagine you have a directory with data files, and you need to validate the integrity of these files. The directory contains a `sha1sum.txt` file with a [sha1](https://en.wikipedia.org/wiki/SHA-1) digital signature for every file. Go, with it’s concurrency primitives and ability to use all the cores of your machine, is much better suited to this task than Python.
+Imagine you have a directory with data files, and you need to validate the integrity of these files. The directory contains a `sha1sum.txt` file with a [sha1](https://en.wikipedia.org/wiki/SHA-1) digital signature for every file. Go, with its concurrency primitives and ability to use all the cores of your machine, is much better suited to this task than Python.
 
 **Listing 1: sha1sum.txt**
 ```
@@ -42,7 +42,7 @@ On the Python side of the code, we’re going to write a function named `check_s
 
 
 
-Figure 1 shows the flow of data between the  Python function to the Go function and back.
+Figure 1 shows the flow of data from the Python function to the Go function and back.
 
 Here are the steps we’re going to follow for the rest of the post:
 
@@ -61,7 +61,7 @@ The important part of the code to see now is the definition of the `CheckSignatu
 **Listing 2: CheckSignatures function definition**  
 ```
 // CheckSignatures calculates sha1 signatures for files in rootDir and compare
-// them with signature found at "sha1sum.txt" in the same directory. It'll
+// them with signatures found at "sha1sum.txt" in the same directory. It'll
 // return an error if one of the signatures don't match
 func CheckSignatures(rootDir string) error {
 ```
@@ -101,7 +101,7 @@ _Note: Apart from the Go toolchain, we’ll also need a C compiler (such as `gcc
 15 func main() {}
 ```
 
-Listing 3 shows the `export.go` file from the project. We import “C” on line 03 and then on line 05, the `verify` function is marked to be exported in shared library. It’s important that the comment is provided exactly as is. You can see on line 06, the `verify` function accepts a C based string pointer using the C package `char` type. For Go code to work with C strings, the C package provides a `GoString` function (which is used on line 07) and a`CString` function (which is used in line 09). Finally, an empty `main` function is declared at the end.
+Listing 3 shows the `export.go` file from the project. We import “C” on line 03 and then on line 05, the `verify` function is marked to be exported in the shared library. It’s important that the comment is provided exactly as is. You can see on line 06, the `verify` function accepts a C based string pointer using the C package `char` type. For Go code to work with C strings, the C package provides a `GoString` function (which is used on line 07) and a `CString` function (which is used in line 09). Finally, an empty `main` function is declared at the end.
 
 To build the shared library, you need to run the `go build` command with a special flag.
 
@@ -149,9 +149,9 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 Listing 6 shows an interactive Python session that walks you through testing the use of the exported to a shared library we wrote in Go.  line 01 we import the `ctypes` module to start. Then on line 06, we load the shared library into memory. On lines 03-05 we load the `verify` function from the shared library and set the input and output types. Lines 06-07 load the `free` function so we can free the memory allocated by Go (see more below).
 
-Line 08 is the actual function call to `verify`. We need to convert the directory name to Python's `bytes` before passing it to the function. The return value, which is a C string, is stored in `ptr`. On line 09, we convert the C string to a Python `bytes` and on line 10 we free the memory allocated by Go. Finally on line 11 we convert `out` from `bytes` to `str` before printing it.
+Line 08 is the actual function call to `verify`. We need to convert the directory name to Python's `bytes` before passing it to the function. The return value, which is a C string, is stored in `ptr`. On line 09, we convert the C string to a Python `bytes` and on line 10 we free the memory allocated by Go. Finally, on line 11, we convert `out` from `bytes` to `str` before printing it.
 
-_Note: Line 02 assumes the shared library, `_checksig.so` is in the current directory. If you started the Python session elsewhere, change the path to the `_checksig.so`._
+_Note: Line 02 assumes the shared library, `_checksig.so` is in the current directory. If you started the Python session elsewhere, change the path to the `_checksig.so` in line 02._
 
 With very little effort we're able to call Go code from Python.
 
@@ -168,21 +168,25 @@ You need to be extra careful when sharing memory between Go and Python (or C).  
 str := C.CString(err.Error())
 ```
 
-`C.String` [documentation](https://golang.org/cmd/cgo/) says:
+The [documentation](https://golang.org/cmd/cgo/) for `C.String` says:
 
+**Listing 7**  
+```
 > // Go string to C string
 > // The C string is allocated in the C heap using malloc.
 > // **It is the caller's responsibility to arrange for it to be
 > // freed**, such as by calling C.free (be sure to include stdlib.h
 > // if C.free is needed).
 > func C.CString(string) *C.char
-
+```
 
 To avoid a memory leak in our interactive prompt, we loaded the `free` function and used it to free the memory allocated by Go.
 
 ### Conclusion
 
-With very little code, you can use Go from Python. Unlike the previous installment, there's no RPC step - meaning you don't need to marshal and unmarshal parameters on every function call and there's no network involved as well. Calling from Python to C this way is much faster than a gRPC call. On the other hand you need to be more careful with memory management and the packaging process is more complex.
+With very little code, you can use Go from Python. Unlike the previous installment, there's no RPC step - meaning you don't need to marshal and unmarshal parameters on every function call and there's no network involved as well. Calling from Python to C this way is much faster than a gRPC call. On the other hand, you need to be more careful with memory management and the packaging process is more complex.
+
+_Note: A simple [benchmark[(https://github.com/ardanlabs/python-go/tree/master/pyext/bench) on my machine clocks gRPC function call at 128µs vs a shared library call at 3.61µs - about 35 times faster._
 
 I hope that you've found this style of writing code: Pure Go first, then exporting and then trying it out in an interactive session appealing. I urge you to try this workflow yourself next time you write some code.
 
