@@ -41,7 +41,6 @@ On the Python side of the code, we’re going to write a function named `check_s
 ![](func-call.png)
 
 
-
 Figure 1 shows the flow of data from the Python function to the Go function and back.
 
 Here are the steps we’re going to follow for the rest of the post:
@@ -50,7 +49,7 @@ Here are the steps we’re going to follow for the rest of the post:
 * Exporting to the shared library (`verify`)
 * Use ctypes in the Python interactive prompt to call the Go code
 * Write and package the Python code (`check_signatures`)
-*  We’ll do this part in the next blog post - this one is already long enough
+    * We’ll do this part in the next blog post - this one is already long enough
 
 ### Go Code - The “CheckSignatures” Function
 

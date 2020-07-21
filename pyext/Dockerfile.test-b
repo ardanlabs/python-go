@@ -7,10 +7,14 @@ RUN python -m pip install --upgrade pip
 COPY ./testdata/logs /tmp/logs
 WORKDIR /code
 COPY . .
+COPY example.py /tmp
 RUN python setup.py sdist
 RUN python setup.py bdist_wheel
-# RUN python -m pip install /code/dist/checksig-0.1.0-cp38-cp38-linux_x86_64.whl
-RUN python -m pip install /code/dist/checksig-0.1.0.tar.gz
-COPY example.py /tmp
 WORKDIR /tmp
+# Check wheel
+RUN python -m pip install /code/dist/checksig-0.1.0-cp38-cp38-linux_x86_64.whl
+RUN python example.py
+# Check sdist
+RUN python -m pip uninstall -y checksig
+RUN python -m pip install /code/dist/checksig-0.1.0.tar.gz
 RUN python example.py

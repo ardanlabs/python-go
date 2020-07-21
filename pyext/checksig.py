@@ -4,10 +4,12 @@ import ctypes
 from distutils.sysconfig import get_config_var
 from pathlib import Path
 
-# Load function and set its signature
+# Location of shared library
 here = Path(__file__).absolute().parent
 ext_suffix = get_config_var('EXT_SUFFIX')
 so_file = here / ('_checksig' + ext_suffix)
+
+# Load functions from shared library set their signatures
 so = ctypes.cdll.LoadLibrary(so_file)
 verify = so.verify
 verify.argtypes = [ctypes.c_char_p]
