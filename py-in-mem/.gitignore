@@ -1,4 +1,3 @@
 .clang_complete
 .exrc
 __pycache__/
-pyinmem
