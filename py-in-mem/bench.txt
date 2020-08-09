@@ -1,0 +1,7 @@
+gRPC 
+BenchmarkClient-4   	     715	   1604483 ns/op
+
+in-mem
+BenchmarkOutliers-4   	   31264	     37541 ns/op
+
+x 42.739
