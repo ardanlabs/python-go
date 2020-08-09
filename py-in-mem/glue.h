@@ -3,9 +3,15 @@
 
 #include <Python.h>
 
+typedef struct {
+	long *indices;
+	long size;
+	int err;
+} result_t;
 
-void init_python();
+void *init_python();
 PyObject *load_func(const char *module_name, char *func_name);
-int *detect(PyObject *func, double *values, long size);
+result_t detect(PyObject *func, double *values, long size);
+const char *py_last_error();
 
 #endif // GLUE_H

@@ -3,7 +3,7 @@
 #include <numpy/arrayobject.h>
 
 
-void init_python() {
+void *init_python() {
 	Py_Initialize();
 	import_array();
 }
@@ -14,14 +14,12 @@ PyObject *load_func(const char *module_name, char *func_name) {
 
 	py_mod_name = PyUnicode_FromString(module_name);
 	if (py_mod_name == NULL) {
-		printf("ERROR: MODULE NAME\n");
 		return NULL;
 	}
 
 	module = PyImport_Import(py_mod_name);
   Py_DECREF(py_mod_name);
 	if (module == NULL) {
-		printf("ERROR: IMPORT\n");
 		return NULL;
 	}
 
@@ -30,26 +28,36 @@ PyObject *load_func(const char *module_name, char *func_name) {
 	return func;
 }
 
-int *detect(PyObject *func, double *values, long size) {
+result_t detect(PyObject *func, double *values, long size) {
+	result_t res = {NULL, 0};
 	npy_intp dim[] = {size};
 	PyObject *arr = PyArray_SimpleNewFromData(1, dim, NPY_DOUBLE, values);
 	if (arr == NULL) {
-		printf("<ERROR> PyArray_SimpleNewFromData\n");
-		return NULL;
+		res.err = 1;
+		return res;
 	}
 	PyObject *args = PyTuple_New(1);
 	PyTuple_SetItem(args, 0, arr);
 	PyArrayObject *out = (PyArrayObject *)PyObject_CallObject(func, args);
 	if (out == NULL) {
-		printf("<ERROR> calling function");
+		res.err = 1;
+		return res;
+	}
+
+
+	res.size = PyArray_SIZE(out);
+	res.indices = (long *)PyArray_GETPTR1(out, 0);
+	return res;
+}
+
+const char *py_last_error() {
+	PyObject *err = PyErr_Occurred();
+	if (err == NULL) {
 		return NULL;
 	}
 
-	long osize = PyArray_SIZE(out);
-
-	printf("size = %d\n", osize);
-	long *ptr = (long *)PyArray_GETPTR1(out, 0);
-	for (long i = 0; i < osize; i++) {
-		printf("%d\n", ptr[i]);
-	}
+	PyObject *str = PyObject_Str(err);
+	const char *utf8 = PyUnicode_AsUTF8(str);
+	Py_DECREF(str);
+	return utf8;
 }
