@@ -7,13 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDetect(t *testing.T) {
-	require := require.New(t)
-	require.NoError(Initialize())
-
-	o, err := NewOutliers("outliers", "detect")
-	require.NoError(err, "new")
-
+func genData() ([]float64, []int) {
 	const size = 1000
 	data := make([]float64, size)
 	for i := 0; i < size; i++ {
@@ -24,9 +18,22 @@ func TestDetect(t *testing.T) {
 	data[113] = 92.1
 	data[835] = 93.2
 
+	indices := []int{7, 113, 835}
+	return data, indices
+}
+
+func TestDetect(t *testing.T) {
+	require := require.New(t)
+	require.NoError(Initialize())
+
+	o, err := NewOutliers("outliers", "detect")
+	require.NoError(err, "new")
+
+	data, indices := genData()
+
 	out, err := o.Detect(data)
 	require.NoError(err, "detect")
-	require.Equal([]int{7, 113, 835}, out, "outliers")
+	require.Equal(indices, out, "outliers")
 }
 
 func TestNotFound(t *testing.T) {
@@ -38,4 +45,18 @@ func TestNotFound(t *testing.T) {
 
 	_, err = NewOutliers("no_such_module", "detect")
 	require.Error(err, "module")
+}
+
+func BenchmarkOutliers(b *testing.B) {
+	require := require.New(b)
+	require.NoError(Initialize())
+	o, err := NewOutliers("outliers", "detect")
+	require.NoError(err, "new")
+	data, _ := genData()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := o.Detect(data)
+		require.NoError(err)
+	}
 }
