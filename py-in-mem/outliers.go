@@ -2,6 +2,7 @@ package outliers
 
 import (
 	"fmt"
+	"runtime"
 	"unsafe"
 )
 
@@ -37,12 +38,18 @@ func NewOutliers(moduleName, funcName string) (*Outliers, error) {
 		return nil, err
 	}
 
-	return &Outliers{pyFunc}, nil
+	out := &Outliers{pyFunc}
+	runtime.SetFinalizer(out, func(o *Outliers) {
+		C.py_decref(out.pyFunc)
+	})
+
+	return out, nil
 }
 
 func (o *Outliers) Detect(data []float64) ([]int, error) {
 	carr := (*C.double)(&(data[0]))
 	res := C.detect(o.pyFunc, carr, (C.long)(len(data)))
+	runtime.KeepAlive(data)
 	if res.err != 0 {
 		return nil, pyLastError()
 	}
@@ -50,6 +57,7 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 	// Convert C int* to []int
 	indices := make([]int, res.size)
 	ptr := unsafe.Pointer(res.indices)
+	// Ugly hack to convert C.long* to []C.long
 	cArr := (*[1 << 20]C.long)(ptr)
 	for i := 0; i < len(indices); i++ {
 		indices[i] = (int)(cArr[i])

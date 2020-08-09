@@ -61,3 +61,7 @@ const char *py_last_error() {
 	Py_DECREF(str);
 	return utf8;
 }
+
+void py_decref(PyObject *obj) {
+	Py_DECREF(obj);
+}
