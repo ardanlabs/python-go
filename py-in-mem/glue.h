@@ -4,9 +4,9 @@
 #include <Python.h>
 
 typedef struct {
-	long *indices;
-	long size;
-	int err;
+  long *indices;
+  long size;
+  int err;
 } result_t;
 
 void *init_python();
