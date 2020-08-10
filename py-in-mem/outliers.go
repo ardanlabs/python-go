@@ -3,6 +3,7 @@ package outliers
 import (
 	"fmt"
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -16,16 +17,15 @@ import (
 import "C"
 
 var (
-	initialized = false
+	initOnce sync.Once
+	initErr  error
 )
 
-func Initialize() error {
-	if initialized {
-		return nil
-	}
-	C.init_python()
-	initialized = true
-	return pyLastError()
+func initialize() {
+	initOnce.Do(func() {
+		C.init_python()
+		initErr = pyLastError()
+	})
 }
 
 type Outliers struct {
@@ -33,6 +33,10 @@ type Outliers struct {
 }
 
 func NewOutliers(moduleName, funcName string) (*Outliers, error) {
+	initialize()
+	if initErr != nil {
+		return nil, initErr
+	}
 	pyFunc, err := loadPyFunc(moduleName, funcName)
 	if err != nil {
 		return nil, err

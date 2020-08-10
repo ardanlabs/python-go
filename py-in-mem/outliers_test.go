@@ -24,7 +24,6 @@ func genData() ([]float64, []int) {
 
 func TestDetect(t *testing.T) {
 	require := require.New(t)
-	require.NoError(Initialize())
 
 	o, err := NewOutliers("outliers", "detect")
 	require.NoError(err, "new")
@@ -38,7 +37,6 @@ func TestDetect(t *testing.T) {
 
 func TestNotFound(t *testing.T) {
 	require := require.New(t)
-	require.NoError(Initialize())
 
 	_, err := NewOutliers("outliers", "no-such-function")
 	require.Error(err, "attribute")
@@ -49,7 +47,6 @@ func TestNotFound(t *testing.T) {
 
 func BenchmarkOutliers(b *testing.B) {
 	require := require.New(b)
-	require.NoError(Initialize())
 	o, err := NewOutliers("outliers", "detect")
 	require.NoError(err, "new")
 	data, _ := genData()

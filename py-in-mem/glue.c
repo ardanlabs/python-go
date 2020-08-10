@@ -3,6 +3,7 @@
 #include <numpy/arrayobject.h>
 
 
+// Return void * since import_array is a macro returning void *
 void *init_python() {
 	Py_Initialize();
 	import_array();
