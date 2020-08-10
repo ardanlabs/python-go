@@ -28,10 +28,12 @@ func initialize() {
 	})
 }
 
+// Outliers does outlier detection
 type Outliers struct {
 	pyFunc *C.PyObject
 }
 
+// NewOutliers returns an new Outliers using moduleName.funcName Python function
 func NewOutliers(moduleName, funcName string) (*Outliers, error) {
 	initialize()
 	if initErr != nil {
@@ -50,6 +52,7 @@ func NewOutliers(moduleName, funcName string) (*Outliers, error) {
 	return out, nil
 }
 
+// Detect returns slice of outliers indices
 func (o *Outliers) Detect(data []float64) ([]int, error) {
 	carr := (*C.double)(&(data[0]))
 	res := C.detect(o.pyFunc, carr, (C.long)(len(data)))
