@@ -62,14 +62,15 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 	}
 
 	// Convert C int* to []int
-	indices := make([]int, res.size)
 	ptr := unsafe.Pointer(res.indices)
-	// Ugly hack to convert C.long* to []C.long
-	cArr := (*[1 << 20]C.long)(ptr)
-	for i := 0; i < len(indices); i++ {
-		indices[i] = (int)(cArr[i])
-	}
-	C.free(ptr)
+	// Ugly hack to convert C.long* to []int
+	arr := (*[1 << 20]int)(ptr)
+	indices := arr[:res.size]
+	/* FIXME
+	runtime.SetFinalizer(indices, func() {
+		C.free(ptr)
+	})
+	*/
 	return indices, nil
 }
 
@@ -96,6 +97,6 @@ func pyLastError() error {
 	}
 
 	err := C.GoString(cp)
-	// C.free(unsafe.Pointer(cp))
+	// C.free(unsafe.Pointer(cp)) // FIXME
 	return fmt.Errorf("%s", err)
 }

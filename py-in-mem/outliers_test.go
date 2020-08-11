@@ -14,11 +14,11 @@ func genData() ([]float64, []int) {
 		data[i] = rand.Float64()
 	}
 
-	data[7] = 97.3
-	data[113] = 92.1
-	data[835] = 93.2
-
 	indices := []int{7, 113, 835}
+	for _, i := range indices {
+		data[i] += 97
+	}
+
 	return data, indices
 }
 

@@ -17,7 +17,7 @@ interact with Python as a shared library.
 _Note: This blog is not for the weak of heart - we'll pass Go slices directly
 to Python, use Python allocated memory directly in Go and fool the Go compiler
 with ugly tricks. You better have some harsh performance requirements to follow
-this path._
+this path. So buckle up Buttercup, it's going to be a wild ride._
 
 ### Python Code
 
@@ -57,32 +57,134 @@ The embedding code involves some C code which is written in it's own file - `glu
 
 Figure 1 shows the flow of data from Go to Python and back.
 
-### Handling Python Errors
+### Overview of Python's Internals
 
-### Initialization
+Every Python object is represented in C as a `PyObject *`. Each `PyObject *`
+has a counter for how many variables point to it, this is used by Python's
+[reference counting](https://en.wikipedia.org/wiki/Reference_counting) garbage
+collector. Once you're done with a `PyObject *`, you need to call `Py_DECREF`
+on it.
 
-To initialize Python & numpy, we need to call `Py_Initialize` from the Python
-API and `import_array()` from numpy.
+At the language level, Python uses exceptions. At the C level, things are
+different. Python's C-API signal an error by returning `NULL`, you can use
+`PyErr_Occurred` API function to get the last exception.
 
-
-**Listing 2: gule.c `init_python`**
+**Listing 2: glue.c `py_last_error`**
 ```
-01 #include "glue.h"
-02 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-03 #include <numpy/arrayobject.h>
-04 
-05 
-06 // Return void * since import_array is a macro returning void *
-07 void *init_python() {
-08 	Py_Initialize();
-09 	import_array();
-10 }
+51 const char *py_last_error() {
+52   PyObject *err = PyErr_Occurred();
+53   if (err == NULL) {
+54     return NULL;
+55   }
+56 
+57   PyObject *str = PyObject_Str(err);
+58   const char *utf8 = PyUnicode_AsUTF8(str);
+59   Py_DECREF(str);
+60   return utf8;
+61 }
+62 
 ```
 
-Listing 2 show the C part of initialization. On line 01 we include `glue.h` that has function definitions and includes the `Python.h` header file. On line 03 we include the numpy header file and on lines 06-10 we initialize the code.
+Listing 2 show's the C part of error handling.
+On line 52 we use `PyErr_Occurred` to get the last exception. On line 27 we
+convert it to a Python `str` and on line 58 we convert the Python `str` to a C
+`char *`.
+
+**Listing 3: outliers.go `PyLastError`**
+```
+92 func pyLastError() error {
+93 	cp := C.py_last_error()
+94 	if cp == nil {
+95 		return nil
+96 	}
+97 
+98 	err := C.GoString(cp)
+99 	// C.free(unsafe.Pointer(cp)) // FIXME
+100 	return fmt.Errorf("%s", err)
+101 }
+```
+
+Listing 3 show's Go implantation of handling Python errors. On line 93 we call
+the C function and on line 98 we convert C `char *` to a Go string and on line
+100 we convert the string to an `error`.
+
+### Calling Python: Go -> C
+
+**Listing ??: outliers.go `Detect`**
+```
+55 // Detect returns slice of outliers indices
+56 func (o *Outliers) Detect(data []float64) ([]int, error) {
+57 	carr := (*C.double)(&(data[0]))
+58 	res := C.detect(o.pyFunc, carr, (C.long)(len(data)))
+59 	runtime.KeepAlive(data)
+60 	if res.err != 0 {
+61 		return nil, pyLastError()
+62 	}
+63 
+64 	// Convert C int* to []int
+65 	indices := make([]int, res.size)
+66 	ptr := unsafe.Pointer(res.indices)
+67 	// Ugly hack to convert C.long* to []C.long
+68 	cArr := (*[1 << 20]C.long)(ptr)
+69 	for i := 0; i < len(indices); i++ {
+70 		indices[i] = (int)(cArr[i])
+71 	}
+72 	C.free(ptr)
+73 	return indices, nil
+74 }
+```
 
 
-**Listing 3: outliers.go `initialize`**
+### Calling Python: Python -> C
+
+We call Python via a C layer. The C layer need to pass data to Python and a
+result and possible error value back.
+Since C does not support multiple return values, we'll use a struct to hold the possible return values.
+
+**Listing 4: glue.h `result_t` struct**
+```
+06 typedef struct {
+07   long *indices;
+08   long size;
+09   int err;
+10 } result_t;
+```
+
+Listing 4 show C's `result_t` struct that holds the return value.
+On line 07 we have an array of indices and on line 08 we have its size.
+On line 09 we have an `int` flag specifying if there was an error or not. We
+can extract the error with `PyLastError`.
+
+
+**Listing 5: glue.c `detect`**
+```
+30 result_t detect(PyObject *func, double *values, long size) {
+31   result_t res = {NULL, 0};
+32   npy_intp dim[] = {size};
+33   PyObject *arr = PyArray_SimpleNewFromData(1, dim, NPY_DOUBLE, values);
+34   if (arr == NULL) {
+35     res.err = 1;
+36     return res;
+37   }
+38   PyObject *args = PyTuple_New(1);
+39   PyTuple_SetItem(args, 0, arr);
+40   PyArrayObject *out = (PyArrayObject *)PyObject_CallObject(func, args);
+41   if (out == NULL) {
+42     res.err = 1;
+43     return res;
+44   }
+45 
+46   res.size = PyArray_SIZE(out);
+47   res.indices = (long *)PyArray_GETPTR1(out, 0);
+48   return res;
+49 }
+```
+
+
+
+### Building
+
+**Listing ???: outliers.go `cgo` Instructions**
 ```
 01 package outliers
 02 
@@ -101,20 +203,8 @@ Listing 2 show the C part of initialization. On line 01 we include `glue.h` that
 15 
 16 */
 17 import "C"
-18 
-19 var (
-20 	initOnce sync.Once
-21 	initErr  error
-22 )
-23 
-24 func initialize() {
-25 	initOnce.Do(func() {
-26 		C.init_python()
-27 		initErr = pyLastError()
-28 	})
-29 }
 ```
 
-Listing 3 shows the Go initialization code. On lines 10-17 we have `cgo` code.
+Listing ??? shows the `cgo` instructions. On line 07 we import the [unsafe](https://golang.org/pkg/unsafe/) package so we'll be able to work with C pointers.
 On line 11 we use the [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) to find C compiler directives for Python. On line 12 we tell `cgo` to use the Python shared library.
-In order to make sure initialization code runs ones, on line 20 we have a [sync.Once](https://golang.org/pkg/sync/#example_Once) variable. On line 24 we use `initOnce` to call the `init_python` function and on line 27 we record the initi
+On line 14 we import the C code definitions from `glue.h` and on line 17 we have the `import "C"` directive that *must* come right after the comment.
