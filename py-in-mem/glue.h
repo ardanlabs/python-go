@@ -3,10 +3,12 @@
 
 #include <Python.h>
 
+// Result of calling detect
 typedef struct {
-  long *indices;
-  long size;
-  int err;
+  PyObject *obj; // numpy array object, so we can free it
+  long *indices; // indices of outliers
+  long size;     // number of outliers
+  int err;       // Flag if there was an error
 } result_t;
 
 void *init_python();
