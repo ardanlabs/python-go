@@ -2,6 +2,14 @@
 
 **THIS IS A WORK IN PROGRESS, IGNORE EVERYTHING BELOW THIS LINE**
 
+Outline:
+- Introduction
+- Python code
+- Python C-API
+- Memory management
+- Conversion Hacks
+- Building 
+
 ### Introduction
 
 In [a previous
