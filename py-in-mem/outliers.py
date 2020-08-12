@@ -1,3 +1,4 @@
+"""Detect outliers"""
 import numpy as np
 
 
