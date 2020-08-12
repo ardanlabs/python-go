@@ -1,5 +1,7 @@
 # Go ↔ Python: Part IV Using Python in Memory
 
+**THIS IS A WORK IN PROGRESS, IGNORE EVERYTHING BELOW THIS LINE**
+
 ### Introduction
 
 In [a previous
