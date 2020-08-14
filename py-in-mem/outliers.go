@@ -41,17 +41,13 @@ func NewOutliers(moduleName, funcName string) (*Outliers, error) {
 	if initErr != nil {
 		return nil, initErr
 	}
+
 	fn, err := loadPyFunc(moduleName, funcName)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &Outliers{fn}
-	runtime.SetFinalizer(out, func(o *Outliers) {
-		C.py_decref(out.fn)
-	})
-
-	return out, nil
+	return &Outliers{fn}, nil
 }
 
 // Detect returns slice of outliers indices
@@ -74,6 +70,16 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 	// Free Python object
 	C.py_decref(res.obj)
 	return indices, nil
+}
+
+// Close frees the underlying Python function
+// You can't use the object after closing it
+func (o *Outliers) Close() {
+	if o.fn == nil {
+		return
+	}
+	C.py_decref(o.fn)
+	o.fn = nil
 }
 
 // loadPyFunc loads a Python function by module and function name

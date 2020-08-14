@@ -27,6 +27,7 @@ func TestDetect(t *testing.T) {
 
 	o, err := NewOutliers("outliers", "detect")
 	require.NoError(err, "new")
+	defer o.Close()
 
 	data, indices := genData()
 
@@ -49,6 +50,8 @@ func BenchmarkOutliers(b *testing.B) {
 	require := require.New(b)
 	o, err := NewOutliers("outliers", "detect")
 	require.NoError(err, "new")
+	defer o.Close()
+
 	data, _ := genData()
 
 	b.ResetTimer()

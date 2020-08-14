@@ -33,6 +33,7 @@ func main() {
 		return
 	}
 	fmt.Println(indices) // [9 238 743]
+	o.Close() // Free the underlying Python function
 }
 */
 package outliers
