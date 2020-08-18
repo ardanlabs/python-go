@@ -9,16 +9,17 @@ In [the previous post](https://www.ardanlabs.com/blog/2020/07/extending-python-w
 **Figure  1**  
 ![](func-call.png)
 
+
 Figure 1 shows the flow of data from Python to Go and back.
 
 The workflow we're following is:
 
 * Write Go code (`CheckSignature`), 
-* Exporting to the shared library (`verify`)
+* Export to the shared library (`verify`)
 * Use ctypes in the Python interactive prompt to call the Go code
 * Write and package the Python code (`check_signatures`)
 
-In the previous blog post we've done the first three parts and in this blog post we're going to implement the Python module and package it. We'll do this is the following steps:
+In the previous blog post we've done the first three parts and in this one we're going to implement the Python module and package it. We'll do this is the following steps:
 
 * Write the Python module (`checksig.py`)
 * Write the project definition file (`setup.py`)
@@ -26,7 +27,7 @@ In the previous blog post we've done the first three parts and in this blog post
 
 ### Python Module
 
-Let's start with writing a Python module. This module will have a Pythonic API and will hide the low level details of working with the shared library.
+Let's start with writing a Python module. This module will have a Pythonic API and will hide the low level details of working with the shared library built from our Go code.
 
 **Listing 1: checksig.py**
 ```
@@ -61,26 +62,27 @@ Let's start with writing a Python module. This module will have a Pythonic API a
 29         raise ValueError(msg)
 ```
 
-Listing 1 has the code of our Python module. The code in lines 12-18 is very much what we did in the interactive prompt.
+Listing 1 has the code of our Python module. The code on lines 12-18 is very much what we did in the interactive prompt.
 
-Lines 7-10 deal with the shared library file name - we'll get to why we need that when we'll talk about packaging below. In lines 21-29 we define the API of our module - a single function called `check_signatures`. ctypes will convert C's `NULL` to Python's `None`, hence the `if` statement in line 26. In line 29 we signal an error by raising a `ValueError` exception.
+Lines 7-10 deal with the shared library file name - we'll get to why we need that when we'll talk about packaging below. On lines 21-29, we define the API of our module - a single function called `check_signatures`. ctypes will convert C's `NULL` to Python's `None`, hence the `if` statement in line 26. On line 29, we signal an error by raising a `ValueError` exception.
 
 _Note: Python's naming conventions differ from Go. Most Python code is following the standard defined in [PEP-8](https://www.python.org/dev/peps/pep-0008/)._
 
-### Packaging
+### Installing and Building Packages
 
-One of the great things about Go is the packaging. Once you've built the executable - you can copy it over and it'll work™. In the Python world things are different: You need a Python interpreter on the machine running your code, and also install any external dependencies.
+Before we move on to the last part of building a Python module, we need to take a detour and see how installing Python packages work. You can skip this part and head over to code below but I believe this section will help you understand **why** we write the code below.
 
-What happens in Python when you have an extension library which is compiled to platform specific code? There are two options:
+Here’s a simplified workflow of what’s Python’s [pip](https://pip.pypa.io/en/stable/) (the cousin of “go install” in the Go world) is doing when it’s installing a package:
 
-1. You can ship a platform specific package called a `wheel`
-2. You can have the installer compile the Go code. Meaning the user will need a Go compiler on the machine running the application
+**Figure  2**  
+![](func-call.png)
 
-_Note: In Go you also need to compile your code to match the target machine operating system and architecture. This is done by setting the `GOOS` and `GOARCH` environment variables._
 
-In Python, the standard way to solve the above issues is to write a `setup.py` file (the equivalent of Go's `go.mod` file) which defines the Python package, and then generate a `wheel` distribution and a source (called `sdist`) distribution. If the user installs your package on a machine that matches a wheel architecture - Python's installer will use the binary package, otherwise the installer will download the source distribution and will try to compile it.
+Figure 2 shows a simplified flow chart of installing a Python package. If there’s a pre-built binary package (wheel) matching the current OS/architecture it’ll use it. Otherwise, it’ll download the sources and will build the package.
 
-Python has built-in support for extensions written in C, C++ and [SWIG](http://www.swig.org/), but not for Go. We will write our own command for building the Go shared library.
+We roughly split Python packages to “pure” and “non-pure”. Pure packages are written only in Python while non-pure have code written in other languages and compiled to a shared library. Since non-pure packages contain binary code, they need to be built specially for an OS/architecture combination (say Linux/amd64). Our package is considered “non pure” since it contains code written in Go.
+
+We start by writing a file called `setup.py`, this file defines the project and contains instructions on how to build it.
 
 **Listing 2: setup.py**
 ```
@@ -115,11 +117,13 @@ Python has built-in support for extensions written in C, C++ and [SWIG](http://w
 29 )
 ```
 
-Listing 2 shows the `setup.py` file for our project. In line 09 we define a command to build an extension that uses the Go compiler.  Lines 12-14 define the command to run and line 15 runs this command as an external command (Python's `subprocess` is like Go’s `os/exec`).
+Listing 2 shows the `setup.py` file for our project. On line 09, we define a command to build an extension that uses the Go compiler. Python has built-in support for extensions written in C, C++ and [SWIG](http://www.swig.org/), but not for Go.
 
-In line 20 we call the setup command, specifying the package name in line 21 and a version in line 22. In line 23 we define the Python module name and in lines 24-26 we define the extension module (the Go code). In line 27 we override the built-in 'build_ext` command with our `build_ext` command that builds Go code. In line 28 we specify the package is not zip safe since it contains a shared library.
+Lines 12-14 define the command to run and line 15 runs this command as an external command (Python's `subprocess` is like Go’s `os/exec`).
 
-Another file we need to create is `MANIFEST.in`, it's a file that defines all the extra files that need to be packaged in a source distribution. 
+On line 20, we call the setup command, specifying the package name on line 21 and a version on line 22. On line 23, we define the Python module name and on lines 24-26 we define the extension module (the Go code). On line 27, we override the built-in 'build_ext` command with our `build_ext` command that builds Go code. On line 28, we specify the package is not zip safe since it contains a shared library.
+
+Another file we need to create is `MANIFEST.in`. It's a file that defines all the extra files that need to be packaged in the source distribution. 
 
 **Listing 3: MANIFEST.in**
 ```
@@ -129,17 +133,17 @@ Another file we need to create is `MANIFEST.in`, it's a file that defines all th
 
 Listing 3 shows the extra files that should be packaged in source distribution (`sdist`). 
 
-Now we can build the packages.
+Now we can build the Python packages.
 
-**Listing 4: Building the Packages**
+**Listing 4: Building the Python Packages**
 ```
 $ python setup.py bdist_wheel
 $ python setup.py sdist
 ```
 
-Listing 4 shows the command to build a `wheel` and `sdist` package files.
+Listing 4 shows the command to build binary (`wheel`) package and the source (`sdist`) package files.
 
-The package are built in the `dist` directory
+The packages are built in a subdirectory called `dist`.
 
 **Listing 5: Content of `dist` Directory**
 ```
@@ -148,9 +152,9 @@ checksig-0.1.0-cp38-cp38-linux_x86_64.whl
 checksig-0.1.0.tar.gz
 ```
 
-In Listing 5 we use the `ls` command to show the content of the `dist` directory.
+In Listing 5, we use the `ls` command to show the content of the `dist` directory.
 
-The wheel binary package (with `.whl` extension) has the platform information in its name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation system and the architecture - same as Go's `GOOS` and `GOARCH`. Since the wheel file name changes depending on the architecture it’s built on, we had to write some logic in Listing 1 lines 08-10.
+The wheel binary package (with `.whl` extension) has the platform information in its name: `cp38` means CPython version 3.8, `linux_x86_64` is the operation system and the architecture - same as Go's `GOOS` and `GOARCH`. Since the wheel file name changes depending on the architecture it’s built on, we had to write some logic in Listing 1 on lines 08-10.
 
 Now you can use Python's package manager, [pip](https://packaging.python.org/tutorials/installing-packages/) to install these packages. If you want to publish your package, you can upload it to the Python Package Index [PyPI](https://pypi.org/) using tools such as [twine](https://github.com/pypa/twine).
 
