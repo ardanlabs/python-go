@@ -1,8 +1,8 @@
 #include "glue.h"
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_19_API_VERSION 
 #include <numpy/arrayobject.h>
 
-// Return void * since import_array is a macro returning void *
+// Return void * since import_array is a macro returning NULL
 void *init_python() {
   Py_Initialize();
   import_array();
