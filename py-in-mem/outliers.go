@@ -51,6 +51,10 @@ func NewOutliers(moduleName, funcName string) (*Outliers, error) {
 
 // Detect returns slice of outliers indices
 func (o *Outliers) Detect(data []float64) ([]int, error) {
+	if o.fn == nil {
+		return nil, fmt.Errorf("closed")
+	}
+
 	// Convert []float64 to C double*
 	carr := (*C.double)(&(data[0]))
 	res := C.detect(o.fn, carr, (C.long)(len(data)))
