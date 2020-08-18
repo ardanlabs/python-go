@@ -14,7 +14,7 @@ I'm not going to cover all of the code, this blog post is long as is. You can fi
 
 ### A Crash Course in Python Internals
 
-The Python most of use use is call `CPython`, it's written in C and is designed to be extended and embedded using C. In this section we'll cover some topics that will help you understand the code better.
+The Python most of us use is called `CPython`, it's written in C and is designed to be extended and embedded using C. In this section we'll cover some topics that will help you understand the code better.
 
 _Note: The API is [well](https://docs.python.org/3/extending/index.html) [documented](https://docs.python.org/3/c-api/index.html), and there even [a book](https://realpython.com/products/cpython-internals-book/) coming up._
 
@@ -22,7 +22,7 @@ Every Python value is a `PyObject *`, most Python's API function will return a `
 
 Errors are signaled by returning `NULL`, and then you can use the `PyErr_Occurred` function to get the last exception raised.
 
-CPython uses a [reference counting](https://en.wikipedia.org/wiki/Reference_counting) garbage collector.  It means that every `PyObject *` has a counter for how many variables are referencing it. Once the reference counter reaches 0, Python frees the objects memory. As a programmer, you need to take care to decrease the reference counter using `Py_DECREF` once you're done with an object.
+CPython uses a [reference counting](https://en.wikipedia.org/wiki/Reference_counting) garbage collector.  It means that every `PyObject *` has a counter for how many variables are referencing it. Once the reference counter reaches 0, Python frees the object's memory. As a programmer, you need to take care to decrease the reference counter using `Py_DECREF` once you're done with an object.
 
 ### Code Overview
 
@@ -62,7 +62,7 @@ You can see example usage [here](https://github.com/ardanlabs/python-go/blob/mas
 30 }
 ```
 
-Listing 1 shows how we initialize Python. On line 20 we use a [sync.Once](https://golang.org/pkg/sync/#Once) to make sure we initialize only ince. On line 26 we use `initOnce` to call the initialization code and on line 28 we set the `initErr` from the last Python error.
+Listing 1 shows how we initialize Python. On line 20 we use a [sync.Once](https://golang.org/pkg/sync/#Once) to make sure we initialize only once. On line 26 we use `initOnce` to call the initialization code and on line 28 we set the `initErr` from the last Python error.
 
 **Listing 2: outliers.go `NewOutliers`**
 ```
@@ -113,7 +113,7 @@ Listing 2 shows creation of an `Outliers` object.  On line 38 we have the code t
 76 }
 ```
 
-Listing 3 shows the code for `Outliers.Detect` method. On line On line 59 we convert Go `[]float64` to a C `double *`. On line 60 we call the Python function via the C layer and get back a result. On line 62 we tell Go's garabge collector that it can't reclaim the `data` slice until this line.  On lines 63-65 we check if there was an error calling Python. On lines 68,69 we fool the Go compiler to think that the C `double *` is a Go array. On lines 71,72 we copy the data from Python to a new slice. On line 74 we decrement the Python return value reference count.
+Listing 3 shows the code for `Outliers.Detect` method. On line On line 59 we convert Go `[]float64` to a C `double *`. On line 60 we call the Python function via the C layer and get back a result. On line 62 we tell Go's garbage collector that it can't reclaim the `data` slice until this line.  On lines 63-65 we check if there was an error calling Python. On lines 68,69 we fool the Go compiler to think that the C `double *` is a Go array. On lines 71,72 we copy the data from Python to a new slice. On line 74 we decrement the Python return value reference count.
 
 **Listing 4: outliers.go `Outliers.Close` method**
 
@@ -129,7 +129,7 @@ Listing 3 shows the code for `Outliers.Detect` method. On line On line 59 we con
 86 }
 ```
 
-Listing 4 shows `Outliers.Close` method. On line 84 we decrement the Python function object reference count and on line 85 we set the `fn` field to `nil` to signal the `Outliers` object is closed.
+Listing 4 shows the `Outliers.Close` method. On line 84 we decrement the Python function object reference count and on line 85 we set the `fn` field to `nil` to signal the `Outliers` object is closed.
 
 If you're curious about the C code, have a look at [glue.c](https://github.com/ardanlabs/python-go/blob/master/py-in-mem/glue.c).
 
@@ -153,7 +153,7 @@ Listing 5 shows the `cgo` directives.
 
 On line 12 we use the [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) to find C compiler directives for Python. On line 13 we tell `cgo` to use the Python 3.8 shared library.  On line 15 we import the C code definitions from `glue.h` and on line 17 we have the `import "C"` directive that *must* come right after the comment.
 
-numpy headers are a bit more tricky. numpy does not come with a `pkg-config` file but has a Python function that will tell you where the headers are. For security reasons, you can't have `cgo` run arbitrary commands. I opted to asking the user to set the `CGO_CFLAGS` environment variable before building or installing the package.
+numpy headers are a bit more tricky. numpy does not come with a `pkg-config` file but has a Python function that will tell you where the headers are. For security reasons, you can't have `cgo` run arbitrary commands. I opted to ask the user to set the `CGO_CFLAGS` environment variable before building or installing the package.
 
 **Listing 6: Build commands**
 ```
@@ -167,4 +167,4 @@ I like to use [make](https://www.gnu.org/software/make/) to automate such tasks.
 
 ### Conclusion
 
-This code is risky and error prone. There we moments when developing it that I've considered a career change to goat herding at some remote location. On the plus side, benchmarking on my machine shows this code is about 45 times faster than the equivalent [gRPC code](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) code. And even though I'm programming in Go for 10 years and in Python close to 25 - I learned some new things.
+This code is risky and error prone. There were moments when developing it that I've considered a career change to goat herding at some isolated location. On the plus side, benchmarking on my machine shows this code is about 45 times faster than the equivalent [gRPC code](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) code. And even though I'm programming in Go for 10 years and in Python close to 25 - I learned some new things.
