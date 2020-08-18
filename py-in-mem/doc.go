@@ -3,6 +3,11 @@
 You *must* have numpy installed and the Python function you're calling should
 be importable (in the PYTHONPATH).
 
+You need to set CGO_CFLAGS before building the code
+
+	$ export CGO_CFLAGS="-I $(python -c 'import numpy; print(numpy.get_include())'"
+	$ go build
+
 Example:
 
 import (
