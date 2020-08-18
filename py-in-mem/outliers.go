@@ -13,7 +13,6 @@ import (
 #cgo LDFLAGS: -lpython3.8
 
 #include "glue.h"
-
 */
 import "C"
 
