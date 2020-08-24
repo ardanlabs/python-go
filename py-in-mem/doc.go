@@ -11,8 +11,9 @@ You need to set CGO_CFLAGS before building the code
 Example:
 
 import (
-	"github.com/ardanlabs/python-go/outliers"
 	"fmt"
+
+	"github.com/ardanlabs/python-go/outliers"
 )
 
 func main() {
