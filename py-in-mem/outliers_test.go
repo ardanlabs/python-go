@@ -46,6 +46,16 @@ func TestNotFound(t *testing.T) {
 	require.Error(err, "module")
 }
 
+func TestNil(t *testing.T) {
+	require := require.New(t)
+
+	o, err := NewOutliers("outliers", "detect")
+	require.NoError(err, "attribute")
+	indices, err := o.Detect(nil)
+	require.NoError(err, "attribute")
+	require.Equal(0, len(indices), "len")
+}
+
 func BenchmarkOutliers(b *testing.B) {
 	require := require.New(b)
 	o, err := NewOutliers("outliers", "detect")
