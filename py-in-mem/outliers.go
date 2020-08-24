@@ -55,6 +55,10 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 		return nil, fmt.Errorf("closed")
 	}
 
+	if len(data) == 0 { // Short path
+		return nil, nil
+	}
+
 	// Convert []float64 to C double*
 	carr := (*C.double)(&(data[0]))
 	res := C.detect(o.fn, carr, (C.long)(len(data)))

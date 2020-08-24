@@ -41,6 +41,23 @@ When we want to call the Python function, we'll follow these steps:
 
 The Go code is in `outliers.go`, there's some C code in `glue.c` and finally an outlier detection Python function is in `outliers.py`.
 
+**Listing 1: Example Usage**
+```
+15 	o, err := NewOutliers("outliers", "detect")
+16 	if err != nil {
+17 		return err
+18 	}
+19 	defer o.Close()
+20 	indices, err := o.Detect(data)
+21 	if err != nil {
+22 		return err
+23 	}
+24 	fmt.Printf("outliers at: %v\n", indices)
+25 	return nil
+```
+Listing 1 show example usage.
+On line 15 we create an `Outliers` object which uses the function `detect` from the `outliers` Python module. On line 19 we make sure to free the Python function. On line 20 we call the `Detect` method and get the indices of the outliers in the data.
+
 You can see example usage [here](https://github.com/ardanlabs/python-go/blob/master/py-in-mem/doc.go).
 
 ### Code Highlights
