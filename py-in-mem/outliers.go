@@ -74,7 +74,7 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 		return nil, err
 	}
 
-	// Free Python object
+	// Free Python array object
 	C.py_decref(res.obj)
 	return indices, nil
 }
