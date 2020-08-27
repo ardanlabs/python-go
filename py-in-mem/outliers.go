@@ -31,7 +31,7 @@ func initialize() {
 
 // Outliers does outlier detection
 type Outliers struct {
-	fn *C.PyObject
+	fn *C.PyObject // Outlier detection Python function object
 }
 
 // NewOutliers returns an new Outliers using moduleName.funcName Python function
@@ -62,18 +62,18 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 	// Convert []float64 to C double*
 	carr := (*C.double)(&(data[0]))
 	res := C.detect(o.fn, carr, (C.long)(len(data)))
+
 	// Tell Go's GC to keep data alive until here
 	runtime.KeepAlive(data)
 	if res.err != 0 {
 		return nil, pyLastError()
 	}
 
-	// Ugly hack to convert C.long* to []int
-	ptr := unsafe.Pointer(res.indices)
-	arr := (*[1 << 20]int)(ptr)
-	// Create a copy managed by Go
-	indices := make([]int, res.size)
-	copy(indices, arr[:res.size])
+	indices, err := cArrToSlice(res.indices, res.size)
+	if err != nil {
+		return nil, err
+	}
+
 	// Free Python object
 	C.py_decref(res.obj)
 	return indices, nil
@@ -121,4 +121,22 @@ func pyLastError() error {
 	// https://docs.python.org/3/c-api/unicode.html#c.PyUnicode_AsUTF8AndSize
 	// which says: "The caller is not responsible for deallocating the buffer."
 	return fmt.Errorf("%s", err)
+}
+
+func cArrToSlice(cArr *C.long, size C.long) ([]int, error) {
+	const maxSize = 1 << 20
+	if size > maxSize {
+		return nil, fmt.Errorf("C array to large (%d > %d)", size, maxSize)
+	}
+
+	// Ugly hack to convert C.long* to []int - make the compiler think there's
+	// a Go array at the C array memory location
+	ptr := unsafe.Pointer(cArr)
+	arr := (*[maxSize]int)(ptr)
+
+	// Create a copy managed by Go
+	s := make([]int, size)
+	copy(s, arr[:size])
+
+	return s, nil
 }
