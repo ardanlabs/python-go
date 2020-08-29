@@ -11,15 +11,13 @@ void *init_python() {
 // Load function, same as "import module_name.func_name as obj" in Python
 // Returns the function object or NULL if not found
 PyObject *load_func(const char *module_name, char *func_name) {
-  PyObject *py_mod_name, *module;
-
   // Import the module
-  py_mod_name = PyUnicode_FromString(module_name);
+  PyObject *py_mod_name = PyUnicode_FromString(module_name);
   if (py_mod_name == NULL) {
     return NULL;
   }
 
-  module = PyImport_Import(py_mod_name);
+  PyObject *module = PyImport_Import(py_mod_name);
   Py_DECREF(py_mod_name);
   if (module == NULL) {
     return NULL;
