@@ -69,6 +69,7 @@ func (o *Outliers) Detect(data []float64) ([]int, error) {
 		return nil, pyLastError()
 	}
 
+	// Create a Go slice from C long*
 	indices, err := cArrToSlice(res.indices, res.size)
 	if err != nil {
 		return nil, err
@@ -123,6 +124,7 @@ func pyLastError() error {
 	return fmt.Errorf("%s", err)
 }
 
+// Create a new []int from a *C.long
 func cArrToSlice(cArr *C.long, size C.long) ([]int, error) {
 	const maxSize = 1 << 20
 	if size > maxSize {
@@ -134,7 +136,7 @@ func cArrToSlice(cArr *C.long, size C.long) ([]int, error) {
 	ptr := unsafe.Pointer(cArr)
 	arr := (*[maxSize]int)(ptr)
 
-	// Create a copy managed by Go
+	// Create a slice with copy of data managed by Go
 	s := make([]int, size)
 	copy(s, arr[:size])
 
