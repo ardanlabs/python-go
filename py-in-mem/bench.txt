@@ -4,4 +4,9 @@ BenchmarkClient-4   	     715	   1604483 ns/op
 in-mem
 BenchmarkOutliers-4   	   32835	     35527 ns/op
 
-x 45.162355
+pure python
+28.9 µs ± 111 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+
+call:       45.162355
+call only: 237.7520748453297

@@ -1,0 +1,12 @@
+# vim: ft=python
+import numpy as np
+
+
+data = np.random.rand(1000)
+indices = [7, 113, 835]
+
+for i in indices:
+    data[i] += 97
+
+%run outliers.py
+%timeit detect(data)
