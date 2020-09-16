@@ -1,4 +1,5 @@
-# Go ↔ Python: Part V Using Python in Memory
+
+# Go ↔ Python: Part IV Using Python in Memory
 
 ### Introduction
 
@@ -217,6 +218,5 @@ I like to use [make](https://www.gnu.org/software/make/) to automate such tasks.
 
 I'd like to start by thanking the awesome people at the (aptly named) `#darkarts` channel in [Gophers Slack](https://gophers.slack.com/) for their help and insights.
 
-The code we wrote here is tricky and error prone so you should have some tight performance goals before going down this path. Benchmarking on my machine shows this code is about 45 times faster than the equivalent [gRPC code](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) code. Even though I'm programming in Go for 10 years and in Python close to 25 - I learned some new things.
-
+The code we wrote here is tricky and error prone so you should have some tight performance goals before going down this path. Benchmarking on my machine shows this code is about 45 times faster than the equivalent [gRPC code](https://www.ardanlabs.com/blog/2020/06/python-go-grpc.html) code, the function call overhead (without the outliers calculation time) is about 237 times faster. Even though I'm programming in Go for 10 years and in Python close to 25 - I learned some new things.
 
