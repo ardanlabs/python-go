@@ -1,37 +1,38 @@
 # First Contact With Data
 
-> Every single company I've worked at and talked to has the same problem without a single exception so far - poor data quality, especially tracking data. Either there's incomplete data, missing tracking data, duplicative tracking data.
-> - DJ Patil
+### Introduction
 
-I spend a lot of my time digging in various companies' data. Every time, I am surprised by what I'm seeing there, and every time, the engineers and analysts at the company are surprised as well. I've seen missing data, bad data, data nobody knows what it means and many other oddities.
+_Every single company I've worked at and talked to has the same problem without a single exception so far - poor data quality, especially tracking data. Either there's incomplete data, missing tracking data, duplicative tracking data._ - DJ Patil
 
-As a data scientist, the quality of the data you work with is crucial to your success. The old GIGO acronym, which stands for "garbage in, garbage out" is very true. In this blog post we'll discuss some methods and practices that will help you with your first contact with data that will save you a lot of grief down the road.
+I spend a lot of my time digging into data at various companies. Most of the time I’m surprised by what I see and so are the engineers and analysts that work at these companies. I've seen missing data, bad data, data nobody knows anything about, and many other oddities.
 
-I'm going to assume you'll be using [pandas](https://pandas.pydata.org/) to process the data. I'll be using pandas version 1.1 and Python 3.5. The code shown here is an [IPython](https://ipython.org/) session.
+As a data scientist, the quality of the data you work with is crucial to your success. The old GIGO acronym, which stands for "garbage in, garbage out", is very true. In this blog post, we'll discuss methods and practices that will make your first contact with data successful and will save you from a lot of grief down the road.
+
+I'll be using Python 3.8 and [pandas](https://pandas.pydata.org/) version 1.1 in this post. The code shown here is an [IPython](https://ipython.org/) session.
 
 ### Schema
 
-All data have a schema, it is either formally written somewhere or in about 1,000 places in the code. Try to find the schema for the data you're working with, ask people about it - and don't trust it until you compare it with the real data.
+*All* data has a schema in one way or the other. Sometimes it’s properly documented and sometimes it’s spread out in a thousand different places all over the code. It’s important to find this documentation and don't trust it until you compare it with the real data.
 
-Let's have a look at sample weather data from [NOAA](https://www.noaa.gov/weather). The data was originally in CSV format, and I've indented it for readability.
+Let's have a look at weather data from [NOAA](https://www.noaa.gov/weather). The data is provided by NOAA in a CSV format, but I've changed the format here for readability.
 
 **Listing 1: Weather Data**
 ```
-      DATE  SNOW  TMAX  TMIN  PGTM
-2000-01-01     0   100    11  1337
-2000-01-02     0   156    61  2313
-2000-01-03     0   178   106   320
-2000-01-04     0   156    78  1819
-2000-01-05     0    83   -17   843
+      DATE      SNOW      TMAX      TMIN      PGTM
+2000-01-01         0       100        11      1337
+2000-01-02         0       156        61      2313
+2000-01-03         0       178       106       320
+2000-01-04         0       156        78      1819
+2000-01-05         0        83       -17       843
 ```
 
-Without a schema, it's hard to know what's going on here. The `DATE` column is obvious, but the rest are unclear:
+Without a properly documented schema, it's hard to know what's going on. The `DATE` column is obvious, but it’s unclear what the rest of the fields mean.
 
-- What is `SNOW`? How much fell? If so is it inches? centimeters? ... Maybe it's a boolean for yes/no?
-- `TMAX` and `TMIN` are probably the maximal and minimal temperature at the day. What are the units? Both Celsius and Fahrenheit don't make sense - an 89 difference in one day?
-- And what does `PGTM` stand for? What are these numbers?
+- What does `SNOW` represent? Is it describing how much snow fell? If so, is that measurement in inches or maybe centimeters? Maybe it's a boolean value for representing yes or no?
+- `TMAX` and `TMIN` are probably the maximum and minimum temperature for the day. Once again, what are the units since Celsius and Fahrenheit don't make sense being there is an 89 degree difference in 2000-01-01?
+- I have no clue what `PGTM` stands for? 
 
-It's clear that types (string, integer, float ...) are not enough. We need units and maybe more to understand what's going one
+It's clear that only knowing the type of the data (string, integer, float ...) isn’t enough. We need to know the units and maybe more to understand the information..
 
 **Listing 2: Weather Schema**
 
@@ -42,21 +43,21 @@ SNOW - Snowfall (mm)
 PGTM - Peak gust time (hours and minutes, i.e., HHMM)
 ```
 
-One we read the schema, things become clear. `TMAX` and `TMIN` values make sense, `SNOW` is in millimeters and `PGTM` values are actually time of day.
+NOAA did publish a schema and after reading it, the representation of the data is now clear. `TMAX` and `TMIN` are Celsius temperatures but in tenths of a degree. `SNOW` represents snowfall, but in millimeters. Finally,  `PGTM` represents time values for when the peak wind gust occured.
 
-If you have a say in your company, try to see that all data have a formal written schema, and that this schema is kept up to date.
+If you have a say in your company, do your best to make sure all the data you are working with has a formal documented written schema, and that this schema is kept up to date.
 
-Even if your company keeps schemas and updates them, data will still have errors. As agent Mulder used to say: "Trust no one!". Always look at the raw data and see that it matches your assumptions about it.
+Even if your company maintains schemas and keeps them up to date, the raw data you’re processing can still have errors. Always look at the raw data and check if it matches your documented schemas. As agent Mulder said: "Trust no one!".
 
 ### Size Matters
 
-pandas is built to work in memory and by default will load the whole data into memory. Some datasets are too big to fit in memory, and once you exhaust the computer's physical memory and start to swap to disk - performance goes down the drain.
+pandas by default will load all the data you need to work with into memory. Some datasets are too big to fit all of it in memory, and once you exhaust the computer's physical memory and start to swap to disk, performance processing the data goes down the drain.
 
-Load a small part of the data initially, and then extrapolate to guess the final size it'll take in memory. If you're working with a database that's pretty easy - add a `LIMIT` clause to your `SELECT` statement and you're done. If the data is in file - you'll need to work harder.
+My advice is to load a small amount of the data into memory initially, and then extrapolate to figure out how much memory you will need for the entire dataset. If the dataset is coming from a database, add a `LIMIT` clause to your `SELECT` statement to reduce the initial size of the dataset. If the dataset is coming from a file, you'll need a different strategy like reading a limited number of lines of text or a limited number of parsable documents.
 
-I'm to look at part of the [NYC Taxi Dataset](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page). The data comes as a compressed CSV and I'd like to find out how much memory it'll take once loaded to a pandas DataFrame.
+Let’s have a look at a different dataset that is part of the [NYC Taxi Dataset](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page). This data comes as a compressed CSV and I'd like to know how much memory I’ll need to load all of it in pandas.
 
-The first thing I start with is to look at size on disk.
+First, let’s look at how large the dataset is on disk.
 
 **Listing 3: Disk Size**
 
@@ -68,9 +69,9 @@ In [4]: Path(csv_file).stat().st_size / MB
 Out[4]: 85.04909038543701
 ```
 
-About 85MB compressed on disk. From my experience bz2 compresses text to about 10-15% from its original size. Uncompressed this data will be around 780MB on disk.
+The compressed CSV is consuming about 85MB of disk space. From my experience, `bz2` compressed text is about 10-15% smaller from its original size, which means the uncompressed data will consume around 780MB of disk space.
 
-The next thing is to find out how many lines there are.
+The next thing to know is how many lines of text are there in the file.
 
 **List 4: Line Count**
 
@@ -84,30 +85,35 @@ In [8]: f'{num_lines:,}'
 Out[8]: '9,224,065'
 ```
 
-On `5` we import the `bz2` and on `6` we sum a generator expression to get the number of lines in the file, this took about 40 seconds on my machine.
-On `8` I use an `f-string` to print the number in a more human readable format.
+* `[5]` we import the `bz2` library
+* `[6]` we use a generator expression to count the number of lines of text in the file. This took about 40 seconds to run on my machine.
+* `[8]` I use an `f-string` to print the result in a human readable format.
 
-We have 9.2 million lines in the file. Let's load 10,000, into a DataFrame, measure the size and calculate the whole size.
+We have 9.2 million lines of text in the file. Let's load the first 10,000 lines into pandas and measure the amount of memory being used. Then we can calculate the total amount of memory needed to load the complete file.
 
 **Listing 5: Calculating Size**
 
 ```
 In [9]: import pandas as pd
 In [10]: nrows = 10_000
-In [11]: df = pd.read_csv(csv_file, nrows=10_000)
+In [11]: df = pd.read_csv(csv_file, nrows=nrows)
 In [12]: df.memory_usage(deep=True).sum() / MB
 Out[12]: 3.070953369140625
 In [13]: Out[12] * (num_lines / nrows)
 Out[13]: 2832.667348892212
 ```
 
-On `11` we load 10,000 rows to a DataFrame. On `12` we calculate how much memory the DataFrame is consuming in MB and on `13` we calculate the total memory consumption for the whole data - about 2.8GB. The cat can fit in memory.
+* `[11]` we load 10,000 rows to a DataFrame.
+* `[12]` we calculate how much memory the DataFrame is consuming in MB.
+* `[13]` we calculate the total memory consumption for the whole data file. ~2.8GB
 
-_Note: If the data doesn't fit in your computer's memory, don't despair! There are way to load parts of data and reduce memory consumption. But probably the most effective solution is to lease a cloud machine with a lot of memory. Some cloud providers have machines with several **terabytes** of memory._
+It’s safe to load all of the data into memory.
+
+_Note: If the data doesn't fit in your computer's memory, don't despair! There are ways to load parts of data and reduce memory consumption. But probably the most effective solution is to lease a cloud machine with a lot of memory. Some cloud providers have machines with several **terabytes** of memory._
 
 ### Raw Data
 
-Before you load the data, it's a good idea to look at it in it's raw format and see if it matches your assumptions about it.
+Before you load any data, it's a good idea to look at it in it's raw format and see if it matches your understanding of the schema.
 
 **Listing 6: Raw Data**
 
@@ -117,14 +123,16 @@ In [14]: with bz2.open(csv_file, 'rt') as fp:
     ...:         print(line.strip())
     ...:         if i == 3:
     ...:             break
-    ...: 
+    ...:
+
+Output:
 VendorID,tpep_pickup_datetime,tpep_dropoff_datetime,passenger_count,trip_distance,RatecodeID,store_and_fwd_flag,PULocationID,DOLocationID,payment_type,fare_amount,extra,mta_tax,tip_amount,tolls_amount,improvement_surcharge,total_amount
 
 1,2018-05-01 00:13:56,2018-05-01 00:22:46,1,1.60,1,N,230,50,1,8,0.5,0.5,1.85,0,0.3,11.15
 1,2018-05-01 00:23:26,2018-05-01 00:29:56,1,1.70,1,N,263,239,1,7.5,0.5,0.5,2,0,0.3,10.8
 ```
 
-Looks like a CSV with a header line. Let's use the `csv` module to get rows.
+It looks like this file is a CSV with a header on the first line. Let's use the `csv` module to get a rows count.
 
 **Listing 7: Raw Data - CSV**
 
@@ -136,7 +144,9 @@ In [16]: with bz2.open(csv_file, 'rt') as fp:
     ...:         pprint(row)
     ...:         if i == 3:
     ...:             break
-    ...: 
+    ...:
+
+Output:
 {'DOLocationID': '50',
  'PULocationID': '230',
  'RatecodeID': '1',
@@ -157,12 +167,14 @@ In [16]: with bz2.open(csv_file, 'rt') as fp:
 ...
 ```
 
-On `15` we load the `pprint` module for more human readable printing. Then we use `csv.DictReader` to read 3 records and print them. Looking at the data it seems OK: datetime fields look like data & time, amounts look like floating point numbers etc.
+* `[15]` load the `pprint` module for human readable printing.
+* `[16]` use a `csv.DictReader` to read 3 records and print them.
+
+Looking at the data, things seem OK. The datetime fields look like date and time, also the amounts look like floating point numbers.
 
 ### Data Types
 
-Once you see the raw data, and verify you can load the data to memory - you can load the data into a DataFrame. However remember that in CSV everything is text and pandas is guessing the types for you - so you need to check it.
-
+Once you see the raw data and verify you can load the data into memory, you can load the data into pandas. However, remember that in CSV everything is text and pandas is guessing the types for you. After loading the data, check that column types match what you expect.
 
 **Listing 8: Checking Types**
 
@@ -190,13 +202,14 @@ total_amount             float64
 dtype: object
 ```
 
-On `16` we load the whole data into a DataFrame, this took about 45 seconds on my machine. On `17` we print out the data type for each column.
+* `[16]` we load the whole data into a DataFrame, this took about 45 seconds on my machine.
+* `[17]` we print out the data type for each column.
 
-Most of the column types seem OK, but `tpep_pickup_datetime` and `tpep_dropoff_datetime` are `object`. The `object` type usually means a string, and we'd like to have a time stamp here. This is a case where pandas need some help figuring out types.
+Most of the column types seem OK, but `tpep_pickup_datetime` and `tpep_dropoff_datetime` are of type `object`. The `object` type usually means a string, but in this case we'd like these columns to be a timestamp. This is a case where we need to help pandas figure out the correct type for these columns.
 
 _Note: I hate the CSV format with a passion - there's no type information, no formal specification, and don't get me started on Unicode ... If you have a say - pick a different format which has type information. My default storage format is [SQlite](https://www.sqlite.org/) which is a one-file SQL database._
 
-Let's help pandas figure out the types.
+Let's help pandas figure out the correct types.
 
 **Listing 9: Fixing Types**
 
@@ -225,15 +238,15 @@ total_amount                    float64
 dtype: object
 ```
 
-On `19` we tell pandas to parse the two time columns as dates. And by looking at the output of `20` we see now that we have the right types.
+* `[19]` we tell pandas to parse the two time columns as dates. Looking at the output of `[20]`, we see we now have the right types.
 
-### Looking for Outliers
+### Looking for Bad Values
 
-Once the data is loaded and in the right types, it's time to look for bad values. The definition of "bad data" depends on the data you're working with. For example if you have a `temperature` column, the maximal value probably shouldn't be more than 60°C (the highest temperature ever recorded was 56.7°C). But - what if we're talking about engine temperature?
+Once the data is loaded and the correct types are being used, it's time to look for “bad” values. The definition of a "bad” value depends on the data you're working with. For example, if you have a `temperature` column, the maximal value probably shouldn't be more than 60°C (the highest temperature ever recorded on earth was 56.7°C). However, if the data represents engine temperatures, the “bad” value markers would need to be much higher.
 
-One of the easy ways to start is to use the DataFrame's `describe` method. Since our DataFrame has many columns, I'm going to look at a subset of the columns.
+One of the easiest ways to look for bad data is to use the DataFrame's `describe` method. Since our DataFrame has many columns, I'm going to look at a subset of the columns.
 
-**Listing 10: Looking for Outliers**
+**Listing 10: Looking for Bad Data**
 
 ```
 In [21]: df[['trip_distance', 'total_amount', 'passenger_count']].describe()
@@ -251,11 +264,11 @@ max     9.108000e+02  2.346327e+05     9.000000e+00
 
 Right away we see some fishy data:
 
-- The minimal `total_amount` is negative
-- The maximal `trip_distance` is 910 miles
-- The are rides with 0 passengers
+* The minimal `total_amount` is negative
+* The maximal `trip_distance` is 910 miles
+* There are rides with 0 passengers
 
-Sometimes you'll need to run a calculation to find outliers
+Sometimes you'll need to run a calculation to find bad data.
 
 **Listing 11: Trip Duration**
 
@@ -273,23 +286,24 @@ max                0 days 23:59:59
 dtype: object
 ```
 
-On `22` we calculate the trip duration and use `describe` to display statistics on it. 
+* `[22]` we calculate the trip duration and use `describe` to display statistics on it. 
 
-- The minimal duration is negative (maybe someone invented a time machine?)
-- The maximal duration is a full day
+* The minimal duration is negative (maybe someone invented a time machine?)
+* The maximal duration is a full day
+
+In some cases, you’ll need to run more complex queries to find bad data. For example - the speed can’t be more than 55mph. Or, if you look at the weather data, there shouldn’t be any snow when the temperature is above 20°C.
 
 ### Conclusion
 
-I haven't met real data that didn't have errors in it. I've learned to keep my eyes open and challenge everything I *think* I know about the data before starting to process it. I urge you to follow these steps every time you start working with new data:
+I haven't worked with real data that didn't have errors in it. I've learned to keep my eyes open and challenge everything I *think* I know about the data before processing it to make decisions. I urge you to follow these steps every time you start working with thinka new dataset:
 
-- Find out the schema
-- Calculate data size
-- Look at the raw data
-- Check data types
-- Look for outliers
+* Find out the schema
+* Calculate data size
+* Look at the raw data
+* Check data types
+* Look for bad data
 
 This might seem like a lot of work, but I guarantee it'll save you much more work down the road when the models you’ve worked hard to develop start to misbehave.
 
 I'd love to hear your data horror stories, and how you handled them. Reach out to me at miki@353solutions and amaze me.
-
 
