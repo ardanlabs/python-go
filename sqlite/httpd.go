@@ -18,6 +18,7 @@ func tradeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if db == nil {
+		log.Printf("DB uninitialized")
 		http.Error(w, "Database not initialized", http.StatusInternalServerError)
 		return
 	}
@@ -26,11 +27,13 @@ func tradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	var tr Trade
 	if err := json.NewDecoder(r.Body).Decode(&tr); err != nil {
+		log.Printf("json decode error: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := db.AddTrade(tr); err != nil {
+		log.Printf("add error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

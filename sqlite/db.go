@@ -23,9 +23,6 @@ CREATE TABLE IF NOT EXISTS trades (
     price FLOAT,
     buy BOOLEAN
 );
-
-CREATE INDEX IF NOT EXISTS trades_time ON trades(time);
-CREATE INDEX IF NOT EXISTS trades_symbol ON trades(symbol);
 `
 )
 
@@ -38,8 +35,9 @@ type Trade struct {
 
 // TradesDB is a database of stocks
 type TradesDB struct {
-	db   *sql.DB
-	stmt *sql.Stmt
+	db     *sql.DB
+	stmt   *sql.Stmt
+	buffer []Trade
 }
 
 func NewTradesDB(dbFile string) (*TradesDB, error) {
@@ -58,15 +56,47 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 		return nil, err
 	}
 
-	return &TradesDB{db, stmt}, nil
+	buffer := make([]Trade, 0, 1024)
+	return &TradesDB{db, stmt, buffer}, nil
 }
 
 func (db *TradesDB) Close() error {
+	db.Flush()
+	db.stmt.Close()
 	return db.db.Close()
 }
 
-func (db *TradesDB) AddTrade(t Trade) error {
-	// TODO: Batching
-	_, err := db.stmt.Exec(t.Time, t.Symbol, t.Price, t.IsBuy)
+func (db *TradesDB) Flush() error {
+	tx, err := db.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, t := range db.buffer {
+		_, err := tx.Stmt(db.stmt).Exec(t.Time, t.Symbol, t.Price, t.IsBuy)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err = tx.Commit()
+	if err == nil {
+		db.buffer = db.buffer[:0]
+	}
 	return err
+}
+
+func (db *TradesDB) bufferFull() bool {
+	return len(db.buffer) == cap(db.buffer)
+}
+
+func (db *TradesDB) AddTrade(t Trade) error {
+	// FIXME: We might grow buffer indefinitely on consistent Flush errors
+	db.buffer = append(db.buffer, t)
+	if db.bufferFull() {
+		if err := db.Flush(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
