@@ -61,6 +61,7 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 }
 
 func (db *TradesDB) Close() error {
+	// TODO: Check errors from Flush & stmt.Close
 	db.Flush()
 	db.stmt.Close()
 	return db.db.Close()
@@ -86,14 +87,10 @@ func (db *TradesDB) Flush() error {
 	return err
 }
 
-func (db *TradesDB) bufferFull() bool {
-	return len(db.buffer) == cap(db.buffer)
-}
-
 func (db *TradesDB) AddTrade(t Trade) error {
 	// FIXME: We might grow buffer indefinitely on consistent Flush errors
 	db.buffer = append(db.buffer, t)
-	if db.bufferFull() {
+	if len(db.buffer) == cap(db.buffer) {
 		if err := db.Flush(); err != nil {
 			return err
 		}
