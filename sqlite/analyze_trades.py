@@ -1,3 +1,4 @@
+"""Analyze trades"""
 import pandas as pd
 import sqlite3
 from contextlib import closing
@@ -10,12 +11,21 @@ WHERE time >= ? AND time <= ?
 
 
 def load_trades(db_file, start_time, end_time):
+    """Load trades from db_file in given time range."""
     conn = sqlite3.connect(db_file)
     with closing(conn) as db:
         df = pd.read_sql(select_sql, db, params=(start_time, end_time))
 
+    # We can't use detect_types=sqlite3.PARSE_DECLTYPES here since Go is
+    # inserting time zone and Python's sqlite3 doesn't handle it.
+    # See https://bugs.python.org/issue29099
     df["time"] = pd.to_datetime(df["time"])
     return df
+
+
+def average_price(df):
+    """Return average price in df grouped by (stock, buy)"""
+    return df.groupby(["symbol", "buy"], as_index=False)["price"].mean()
 
 
 def time_type(value):
@@ -40,6 +50,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     df = load_trades(args.db.name, args.start, args.end)
-    # Show price average per symbol/buy
-    out = df.groupby(["symbol", "buy"], as_index=False)["price"].mean()
+    out = average_price(df)
     out.to_csv(stdout, index=False)
