@@ -24,8 +24,7 @@ func main() {
 
 	start := time.Date(2020, time.July, 2, 0, 0, 0, 0, time.UTC)
 	delta := 137 * time.Millisecond
-	const n = 100_000
-	for i := 0; i < n; i++ {
+	for i := 0; i < 100_000; i++ {
 		t := start.Add(time.Duration(i) * delta)
 		tr := Trade{
 			Time:   t,
