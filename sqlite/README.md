@@ -5,10 +5,10 @@
 I prefer to use relational (SQL) databases in general since they provide several features that are very helpful when working with data:
 
 [Transactions](https://en.wikipedia.org/wiki/Database_transaction)
-: You insert data into an SQL database inside a transaction. This means that either all of the data gets in, or non of it. Transactions simplify retry logic in data pipelines by order of magnitude.
+: You insert data into an SQL database inside a transaction. This means that either all of the data gets in, or none of it. Transactions simplify retry logic in data pipelines by order of magnitude.
 
 [Schema](https://en.wikipedia.org/wiki/Database_schema)
-: Data in relational database has a schema, which means it's easier to check the validity of your data.
+: Data in relational databases has a schema, which means it's easier to check the validity of your data.
 
 [SQL](https://en.wikipedia.org/wiki/SQL)
 : SQL (Structured Query Language) is a language for selecting and changing data. You don't need to invent yet another way to select interesting parts of data. SQL is an established format and there's a lot of knowledge and tooling around it.
@@ -18,13 +18,13 @@ I like SQLite since the database is a single file, which makes it easier to shar
 
 ## The Project
 
-We'll write an HTTP server in Go what will get notifications on trades and will store them in an SQLite database. Then we'll write a Python program that will process this data.
+We'll write an HTTP server in Go that will get notifications on trades and will store them in an SQLite database. Then we'll write a Python program that will process this data.
 
 In Go, we'll be using [github.com/mattn/go-sqlite3](github.com/mattn/go-sqlite3) which is a wrapper around the SQLite C library.
 
 _Note: Since `go-sqlite` uses `cgo`, the initial build time will be longer than usual. Using `cgo` means that the resulting executable depends on some shared libraries, making distribution slightly more complicated._
 
-In Python, we'll use the build-in `sqlite3` modules and Pandas `read_sql` function to load the data.
+In Python, we'll use the built-in [sqlite3](https://docs.python.org/3/library/sqlite3.html) module and Pandas [read_sql](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_sql.html) function to load the data.
 
 ## The Go HTTP Server - [trades.go](https://github.com/ardanlabs/python-go/blob/master/sqlite/trades.go)
 
@@ -56,9 +56,9 @@ On line 43 we use a field tag to tell the JSON decoder to fill the `IsBuy` field
 34 CREATE INDEX IF NOT EXISTS trades_symbol ON trades(symbol);
 `
 ```
-Listing 2 describes the database schema. On line 26 we create a table called `trades`. On lines 27-30 we define the table columns that correspond to the `Trade` struct fields. On lines 33-34 we create indices on the table to allow fast selection of rows by `time` and `symbol`.
+Listing 2 describes the database schema. On line 26 we create a table called `trades`. On lines 27-30 we define the table columns that correspond to the `Trade` struct fields. On lines 33-34 we create indexes on the table to allow fast selection of rows by `time` and `symbol`.
 
-Inserting records one-by-one is a slow process. We're going to store records in a buffer and once it's full insert all the records in the buffer to the database. This has the advantage of being fast, on my machine about 60,000 records/sec, but carries the risk that we'll loose data on server crash.
+Inserting records one-by-one is a slow process. We're going to store records in a buffer and once it's full insert all the records in the buffer to the database. This has the advantage of being fast, on my machine about 60,000 records/sec, but carries the risk that we'll lose data on server crash.
 
 **Listing 3: Insert Record SQL***
 ```
@@ -110,7 +110,7 @@ Listing 4 describes the `TradesDB` struct. On line 48 we hold the connection to 
 73 }
 ```
 
-Listing 5 show the creation of a `TradesDB`. On line 56 we connect to the database using the "sqlite3" driver. On line 61 we execute the schema SQL to create the `trades` table if it doesn't already exist. On line 66 we pre-compile the insert SQL statement. On line 71 we create the internal buffer with 0 length and a capacity of 1024.
+Listing 5 shows the creation of a `TradesDB`. On line 56 we connect to the database using the "sqlite3" driver. On line 61 we execute the schema SQL to create the `trades` table if it doesn't already exist. On line 66 we pre-compile the insert SQL statement. On line 71 we create the internal buffer with 0 length and a capacity of 1024.
 
 **Listing 6: AddTrade**
 ```
@@ -129,7 +129,7 @@ Listing 5 show the creation of a `TradesDB`. On line 56 we connect to the databa
 116 }
 ```
 
-Listing 6 show the `AddTrade` method. On line 109 we append the trade to the in-memory buffer. On line 110 we check to see if the buffer is full and if it is we call `Flush` on line 111 that will insert the records from the buffer into the database.
+Listing 6 shows the `AddTrade` method. On line 109 we append the trade to the in-memory buffer. On line 110 we check to see if the buffer is full and if it is we call `Flush` on line 111 that will insert the records from the buffer into the database.
 
 **Listing 7: Flush**
 ```
@@ -233,7 +233,7 @@ Listing 9 shows the HTTP handler for new trades. On line 134 we decode the JSON 
 171 }
 ```
 
-Listing 10 shows how we run the server. On line 148 we use the `DB_FILE` environment variable to know the location of the database file. If it doesn't exist, SQLite will create it. On 154 we create the global database `db`. On lines 160 to 170 we set the HTTP server routing and start the HTTP server.
+Listing 10 shows how we run the server. On line 148 we use the `DB_FILE` environment variable to know the location of the database file. If it doesn't exist, SQLite will create it. On line 154 we create the global database `db`. On lines 160 to 170 we set the HTTP server routing and start the HTTP server.
 
 **Listing 11: imports**
 ```
@@ -273,7 +273,7 @@ Listing 12 shows the libraries we're using in the Python code. On line 02 we imp
 11 """
 ```
 
-Listing 13 show the SQL for selecting data. On line 10 we select all the columns from the `trades` table. On line 10 we add a `WHERE` clause for selecting in time range. As in the Go code, we use `?` as placeholders for arguments and *not* consturct the SQL manually.
+Listing 13 shows the SQL for selecting data. On line 10 we select all the columns from the `trades` table. On line 10 we add a `WHERE` clause for selecting in time range. As in the Go code, we use `?` as placeholders for arguments and *not* construct the SQL manually.
 
 **Listing 14: Loading Trades**
 ```
@@ -290,7 +290,7 @@ Listing 13 show the SQL for selecting data. On line 10 we select all the columns
 24     return df
 ```
 
-Listing 14 shows the code for loading trades at a given time range. On line 16 we connect to the database. On lines 17 we use a [context manager](https://www.python.org/dev/peps/pep-0343/), somewhat like Go's `defer` to make sure the database is closed. On line 18 we use pandas `read_sql` function to load data from an SQL query to a `DataFrame`. Python has [an API](https://www.python.org/dev/peps/pep-0249/) for connection to databases (line `database/sql`) and Pandas can use any compatible driver. On line 23 we convert the `time` column to pandas `Timestamp`. This is specific to SQLite that doesn't have built-in support for `TIMESTAMP` types.
+Listing 14 shows the code for loading trades at a given time range. On line 16 we connect to the database. On lines 17 we use a [context manager](https://www.python.org/dev/peps/pep-0343/), somewhat like Go's `defer` to make sure the database is closed. On line 18 we use pandas `read_sql` function to load data from an SQL query to a `DataFrame`. Python has [an API](https://www.python.org/dev/peps/pep-0249/) for connection to databases (like `database/sql`) and Pandas can use any compatible driver. On line 23 we convert the `time` column to pandas `Timestamp`. This is specific to SQLite that doesn't have built-in support for `TIMESTAMP` types.
 
 
 **Listing 15: Average Price**
@@ -319,12 +319,12 @@ Listing 16 shows the output of running the Python code on dummy data.
 
 ## Conclusion
 
-I highly recommend you consider using SQLite in your next project. It's a mature and stable project that can handle huge amounts of data. Many programming language have drivers to SQLite database, which makes it a good storage option.
+I highly recommend you consider using SQLite in your next project. It's a mature and stable project that can handle huge amounts of data. Many programming languages have drivers to SQLite database, which makes it a good storage option.
 
-I've simplified the code as much as I could to show the more interesting points. There are several places where you can try an improve it:
+I've simplified the code as much as I could to show the more interesting points. There are several places where you can try and improve it:
 - Add a retry logic to `Flush`
 - Do more error checking in `Close`
-- Have the Go HTTP sever invoke the Python code every hour
+- Have the Go HTTP server invoke the Python code every hour
 - Run more analysis on the Python side
 
 Have fun with the code, [let me know](mailto:miki@353solutions.com) what crazy things you did.  

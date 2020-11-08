@@ -9,7 +9,7 @@ web-bench:
 
 gen-data:
 	rm -f trades.db
-	go run db.go create_data.go
+	go run trades.go create_data.go
 
 report:
 	python analyze_trades.py \
