@@ -155,7 +155,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("conneted to %s", dbFile)
+	log.Printf("connected to %s", dbFile)
 
 	http.HandleFunc("/trade", tradeHandler)
 
