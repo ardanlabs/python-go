@@ -1,4 +1,4 @@
-module github.com/ardanlabs/python-go/sqlite3
+module github.com/ardanlabs/python-go/sqlite
 
 go 1.15
 

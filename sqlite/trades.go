@@ -29,9 +29,13 @@ CREATE TABLE IF NOT EXISTS trades (
     price FLOAT,
     buy BOOLEAN
 );
+
+CREATE INDEX IF NOT EXISTS trades_time ON trades(time);
+CREATE INDEX IF NOT EXISTS trades_symbol ON trades(symbol);
 `
 )
 
+// Trade is a buy/sell trade for symbol
 type Trade struct {
 	Time   time.Time
 	Symbol string
@@ -68,6 +72,7 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 	return &TradesDB{db, stmt, buffer}, nil
 }
 
+// Close closes all database related resources
 func (db *TradesDB) Close() error {
 	// TODO: Check errors from Flush & stmt.Close
 	db.Flush()
@@ -75,6 +80,7 @@ func (db *TradesDB) Close() error {
 	return db.db.Close()
 }
 
+// Flush inserts trades from internal buffer to the database
 func (db *TradesDB) Flush() error {
 	tx, err := db.db.Begin()
 	if err != nil {
@@ -95,8 +101,11 @@ func (db *TradesDB) Flush() error {
 	return err
 }
 
+// AddTrade adds a new trade.
+// The new trade is only added to the internal buffer and will be inserted
+// to the database later on Flush
 func (db *TradesDB) AddTrade(t Trade) error {
-	// FIXME: We might grow buffer indefinitely on consistent Flush errors
+	// FIXME: We might grow buffer indefinitely on persistent Flush errors
 	db.buffer = append(db.buffer, t)
 	if len(db.buffer) == cap(db.buffer) {
 		if err := db.Flush(); err != nil {
@@ -106,6 +115,7 @@ func (db *TradesDB) AddTrade(t Trade) error {
 	return nil
 }
 
+// tradeHandler handles a new trade notification
 func tradeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "only POST", http.StatusMethodNotAllowed)
