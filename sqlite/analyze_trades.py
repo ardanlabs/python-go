@@ -1,8 +1,9 @@
 """Analyze trades"""
-import pandas as pd
 import sqlite3
 from contextlib import closing
 from datetime import datetime
+
+import pandas as pd
 
 select_sql = """
 SELECT * FROM trades
