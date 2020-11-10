@@ -12,9 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var (
-	db *TradesDB
-
+const (
 	insertSQL = `
 INSERT INTO trades (
 	time, symbol, price, buy
@@ -140,16 +138,14 @@ func (db *TradesDB) AddTrade(t Trade) error {
 	return db.insert(pending)
 }
 
-// tradeHandler handles a new trade notification
-func tradeHandler(w http.ResponseWriter, r *http.Request) {
+type tradeHandler struct {
+	db *TradesDB
+}
+
+// ServeHTTP handles a new trade notification
+func (h *tradeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "only POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if db == nil {
-		log.Printf("DB uninitialized")
-		http.Error(w, "Database not initialized", http.StatusInternalServerError)
 		return
 	}
 
@@ -162,11 +158,13 @@ func tradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.AddTrade(tr); err != nil {
+	if err := h.db.AddTrade(tr); err != nil {
 		log.Printf("add error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Write([]byte("OK\n"))
 }
 
 func main() {
@@ -175,14 +173,13 @@ func main() {
 		dbFile = "trades.db"
 	}
 
-	var err error
-	db, err = NewTradesDB(dbFile)
+	db, err := NewTradesDB(dbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("connected to %s", dbFile)
 
-	http.HandleFunc("/trade", tradeHandler)
+	http.Handle("/trade", &tradeHandler{db})
 
 	addr := os.Getenv("HTTPD_ADDR")
 	if addr == "" {
