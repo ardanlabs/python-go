@@ -42,16 +42,11 @@ type Trade struct {
 	IsBuy  bool `json:"buy"`
 }
 
-func newBuffer() []Trade {
-	return make([]Trade, 0, 1024)
-}
-
 // TradesDB is a database of stocks
 type TradesDB struct {
 	db     *sql.DB
 	stmt   *sql.Stmt
 	buffer []Trade
-	m      sync.Mutex
 }
 
 // NewTradesDB connect to SQLite database in dbFile
@@ -75,32 +70,26 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 	tdb := &TradesDB{
 		db:     db,
 		stmt:   stmt,
-		buffer: newBuffer(),
+		buffer: make([]Trade, 0, 1024),
 	}
 	return tdb, nil
 }
 
 // Close closes all database related resources
 func (db *TradesDB) Close() error {
-	db.m.Lock()
-	pending := db.buffer
-	db.buffer = nil
-	db.m.Unlock()
-
-	// TODO: Check errors from Flush & stmt.Close
-	db.insert(pending)
+	db.Flush()
 	db.stmt.Close()
 	return db.db.Close()
 }
 
-// insert inserts pending trades into the database
-func (db *TradesDB) insert(trades []Trade) error {
+// Flush inserts pending trades into the database
+func (db *TradesDB) Flush() error {
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	for _, t := range trades {
+	for _, t := range db.buffer {
 		_, err := tx.Stmt(db.stmt).Exec(t.Time, t.Symbol, t.Price, t.IsBuy)
 		if err != nil {
 			tx.Rollback()
@@ -108,37 +97,24 @@ func (db *TradesDB) insert(trades []Trade) error {
 		}
 	}
 
+	db.buffer = db.buffer[:0]
 	return tx.Commit()
-}
-
-func (db *TradesDB) add(t Trade) []Trade {
-	db.m.Lock()
-	defer db.m.Unlock()
-
-	db.buffer = append(db.buffer, t)
-	if len(db.buffer) < cap(db.buffer) {
-		return nil
-	}
-
-	// Reset buffer and return trades to insert
-	pending := db.buffer
-	db.buffer = newBuffer()
-	return pending
 }
 
 // AddTrade adds a new trade.
 // The new trade is only added to the internal buffer and will be inserted
 // to the database later
 func (db *TradesDB) AddTrade(t Trade) error {
-	pending := db.add(t)
-	if pending == nil {
-		return nil
+	// FIXME: We might grow indefinetly on persistent Flush errors
+	db.buffer = append(db.buffer, t)
+	if len(db.buffer) == cap(db.buffer) {
+		return db.Flush()
 	}
-
-	return db.insert(pending)
+	return nil
 }
 
 type tradeHandler struct {
+	m  sync.Mutex
 	db *TradesDB
 }
 
@@ -167,6 +143,12 @@ func (h *tradeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK\n"))
 }
 
+func (h *tradeHandler) insert(t Trade) error {
+	h.m.Lock()
+	defer h.m.Unlock()
+	return h.db.AddTrade(t)
+}
+
 func main() {
 	dbFile := os.Getenv("DB_FILE")
 	if dbFile == "" {
@@ -179,7 +161,7 @@ func main() {
 	}
 	log.Printf("connected to %s", dbFile)
 
-	http.Handle("/trade", &tradeHandler{db})
+	http.Handle("/trade", &tradeHandler{db: db})
 
 	addr := os.Getenv("HTTPD_ADDR")
 	if addr == "" {
