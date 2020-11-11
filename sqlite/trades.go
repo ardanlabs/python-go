@@ -1,3 +1,4 @@
+// SQLite example
 package main
 
 import (
@@ -106,7 +107,7 @@ func (db *TradesDB) Flush() error {
 // The new trade is only added to the internal buffer and will be inserted
 // to the database later
 func (db *TradesDB) AddTrade(t Trade) error {
-	// TODO: We might grow indefinetly on persistent Flush errors
+	// TODO: We might grow indefinitely on persistent Flush errors
 	db.buffer = append(db.buffer, t)
 	if len(db.buffer) == cap(db.buffer) {
 		return db.Flush()

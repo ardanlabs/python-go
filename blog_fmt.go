@@ -41,7 +41,7 @@ func main() {
 	for s.Scan() {
 		lnum++
 		line := strings.ReplaceAll(s.Text(), "\t", "    ")
-		fmt.Printf("% 3d %s\n", lnum, line)
+		fmt.Printf("%02d %s\n", lnum, line)
 	}
 
 	if err := s.Err(); err != nil {
