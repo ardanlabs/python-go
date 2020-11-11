@@ -77,6 +77,7 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 
 // Close closes all database related resources
 func (db *TradesDB) Close() error {
+	// TODO: Wrap errors
 	db.Flush()
 	db.stmt.Close()
 	return db.db.Close()
@@ -105,7 +106,7 @@ func (db *TradesDB) Flush() error {
 // The new trade is only added to the internal buffer and will be inserted
 // to the database later
 func (db *TradesDB) AddTrade(t Trade) error {
-	// FIXME: We might grow indefinetly on persistent Flush errors
+	// TODO: We might grow indefinetly on persistent Flush errors
 	db.buffer = append(db.buffer, t)
 	if len(db.buffer) == cap(db.buffer) {
 		return db.Flush()
@@ -113,6 +114,7 @@ func (db *TradesDB) AddTrade(t Trade) error {
 	return nil
 }
 
+// tradeHandler handles requests to adding a trade to the database
 type tradeHandler struct {
 	m  sync.Mutex
 	db *TradesDB
@@ -134,7 +136,7 @@ func (h *tradeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.db.AddTrade(tr); err != nil {
+	if err := h.insert(tr); err != nil {
 		log.Printf("add error: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -143,6 +145,7 @@ func (h *tradeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK\n"))
 }
 
+// insert trade to database, goroutine safe
 func (h *tradeHandler) insert(t Trade) error {
 	h.m.Lock()
 	defer h.m.Unlock()
