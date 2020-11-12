@@ -1,4 +1,4 @@
-module github.com/ardanlabs/python-go/trades
+module github.com/ardanlabs/python-go/sqlite
 
 go 1.15
 

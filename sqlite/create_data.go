@@ -1,11 +1,12 @@
-// +build ignore
-
 package main
 
 import (
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/ardanlabs/python-go/sqlite/trades"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 		"NVDA",
 	}
 
-	db, err := NewTradesDB("trades.db")
+	db, err := trades.NewDB("trades.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,15 +25,16 @@ func main() {
 
 	start := time.Date(2020, time.July, 2, 0, 0, 0, 0, time.UTC)
 	delta := 137 * time.Millisecond
+
 	for i := 0; i < 100_000; i++ {
-		t := start.Add(time.Duration(i) * delta)
-		tr := Trade{
-			Time:   t,
+		time := start.Add(time.Duration(i) * delta)
+		trade := trades.Trade{
+			Time:   time,
 			Symbol: symbols[rand.Intn(len(symbols))],
 			Price:  rand.Float64() * 500.0,
 			IsBuy:  rand.Intn(2) == 0,
 		}
-		if err := db.AddTrade(tr); err != nil {
+		if err := db.Add(trade); err != nil {
 			log.Fatal(err)
 		}
 	}
