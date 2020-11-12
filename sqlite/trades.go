@@ -1,13 +1,8 @@
-// SQLite example
-package main
+// Package trades provides an SQLite based trades database
+package trades
 
 import (
 	"database/sql"
-	"encoding/json"
-	"log"
-	"net/http"
-	"os"
-	"sync"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -40,19 +35,20 @@ type Trade struct {
 	Time   time.Time
 	Symbol string
 	Price  float64
-	IsBuy  bool `json:"buy"`
+	IsBuy  bool
 }
 
-// TradesDB is a database of stocks
-type TradesDB struct {
+// DB is a database of stocks
+type DB struct {
 	db     *sql.DB
 	stmt   *sql.Stmt
 	buffer []Trade
 }
 
-// NewTradesDB connect to SQLite database in dbFile
+// NewDB connect to SQLite database in dbFile
 // Tables will be created if they don't exist
-func NewTradesDB(dbFile string) (*TradesDB, error) {
+// The returned DB is not goroutine safe
+func NewDB(dbFile string) (*DB, error) {
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, err
@@ -68,7 +64,7 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 		return nil, err
 	}
 
-	tdb := &TradesDB{
+	tdb := &DB{
 		db:     db,
 		stmt:   stmt,
 		buffer: make([]Trade, 0, 1024),
@@ -77,7 +73,7 @@ func NewTradesDB(dbFile string) (*TradesDB, error) {
 }
 
 // Close closes all database related resources
-func (db *TradesDB) Close() error {
+func (db *DB) Close() error {
 	// TODO: Wrap errors
 	db.Flush()
 	db.stmt.Close()
@@ -85,7 +81,7 @@ func (db *TradesDB) Close() error {
 }
 
 // Flush inserts pending trades into the database
-func (db *TradesDB) Flush() error {
+func (db *DB) Flush() error {
 	tx, err := db.db.Begin()
 	if err != nil {
 		return err
@@ -106,74 +102,11 @@ func (db *TradesDB) Flush() error {
 // AddTrade adds a new trade.
 // The new trade is only added to the internal buffer and will be inserted
 // to the database later
-func (db *TradesDB) AddTrade(t Trade) error {
+func (db *DB) AddTrade(t Trade) error {
 	// TODO: We might grow indefinitely on persistent Flush errors
 	db.buffer = append(db.buffer, t)
 	if len(db.buffer) == cap(db.buffer) {
 		return db.Flush()
 	}
 	return nil
-}
-
-// tradeHandler handles requests to adding a trade to the database
-type tradeHandler struct {
-	m  sync.Mutex
-	db *TradesDB
-}
-
-// ServeHTTP handles a new trade notification
-func (h *tradeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "only POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var tr Trade
-	if err := json.NewDecoder(r.Body).Decode(&tr); err != nil {
-		log.Printf("json decode error: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := h.insert(tr); err != nil {
-		log.Printf("add error: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte("OK\n"))
-}
-
-// insert trade to database, goroutine safe
-func (h *tradeHandler) insert(t Trade) error {
-	h.m.Lock()
-	defer h.m.Unlock()
-	return h.db.AddTrade(t)
-}
-
-func main() {
-	dbFile := os.Getenv("DB_FILE")
-	if dbFile == "" {
-		dbFile = "trades.db"
-	}
-
-	db, err := NewTradesDB(dbFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("connected to %s", dbFile)
-
-	http.Handle("/trade", &tradeHandler{db: db})
-
-	addr := os.Getenv("HTTPD_ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
-
-	log.Printf("server listening on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatal(err)
-	}
 }

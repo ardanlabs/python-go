@@ -1,4 +1,4 @@
-package main
+package trades
 
 import (
 	"io/ioutil"
@@ -11,7 +11,7 @@ import (
 func TestAdd(t *testing.T) {
 	require := require.New(t)
 
-	db, err := NewTradesDB("/tmp/trades.db")
+	db, err := NewDB("/tmp/trades.db")
 	require.NoError(err)
 	defer db.Close()
 
@@ -35,7 +35,7 @@ func BenchmarkAdd(b *testing.B) {
 	require.NoError(err)
 	file.Close()
 	b.Logf("db file: %s", file.Name())
-	db, err := NewTradesDB(file.Name())
+	db, err := NewDB(file.Name())
 	require.NoError(err)
 	tr := Trade{
 		Time:   time.Now(),
