@@ -1,5 +1,5 @@
 #!/bin/bash
 # Format for blog, use as pipe
-#   cat file.go | blog_fmt.sh
+#   blog_fmt.sh < file.go > /tmp/file.go.n
 
 awk '{gsub("\t", "    ", $0); print NR, $0;}'
