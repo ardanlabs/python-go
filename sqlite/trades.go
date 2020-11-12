@@ -64,12 +64,12 @@ func NewDB(dbFile string) (*DB, error) {
 		return nil, err
 	}
 
-	tdb := &DB{
+	tdb := DB{
 		db:     db,
 		stmt:   stmt,
 		buffer: make([]Trade, 0, 1024),
 	}
-	return tdb, nil
+	return &tdb, nil
 }
 
 // Close closes all database related resources
