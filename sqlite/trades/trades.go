@@ -1,13 +1,15 @@
 // Package trades provides an SQLite based trades database.
 package trades
 
+// Your main or test packages require this import so
+// the sql package is properly initialized.
+// _ "github.com/mattn/go-sqlite3"
+
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -109,17 +111,10 @@ func (db *DB) Flush() error {
 }
 
 // Close flushes all trades to the database and prevents any future trading.
-func (db *DB) Close() (err error) {
+func (db *DB) Close() error {
 	defer func() {
-		if cerr := db.sql.Close(); cerr != nil {
-			err = cerr
-		}
-	}()
-
-	defer func() {
-		if serr := db.stmt.Close(); serr != nil {
-			err = serr
-		}
+		db.stmt.Close()
+		db.sql.Close()
 	}()
 
 	if err := db.Flush(); err != nil {
