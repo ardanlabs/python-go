@@ -5,15 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ardanlabs/python-go/sqlite/trades"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ardanlabs/python-go/sqlite/trades"
 )
+
+func tempFile(require *require.Assertions) string {
+	file, err := ioutil.TempFile("", "*.db")
+	require.NoError(err)
+	file.Close()
+	return file.Name()
+}
 
 func TestAdd(t *testing.T) {
 	require := require.New(t)
 
-	db, err := trades.NewDB("/tmp/trades.db")
+	dbFile := tempFile(require)
+	t.Logf("db file: %s", dbFile)
+	db, err := trades.NewDB(dbFile)
 	require.NoError(err)
 	defer db.Close()
 
@@ -32,13 +41,10 @@ func TestAdd(t *testing.T) {
 
 func BenchmarkAdd(b *testing.B) {
 	require := require.New(b)
-	file, err := ioutil.TempFile("", "*.db")
-	require.NoError(err)
-	file.Close()
+	dbFile := tempFile(require)
+	b.Logf("db file: %s", dbFile)
 
-	b.Logf("db file: %s", file.Name())
-
-	db, err := trades.NewDB(file.Name())
+	db, err := trades.NewDB(dbFile)
 	require.NoError(err)
 	trade := trades.Trade{
 		Time:   time.Now(),

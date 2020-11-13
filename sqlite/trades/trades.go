@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -70,18 +72,18 @@ func NewDB(dbFile string) (*DB, error) {
 	return &db, nil
 }
 
-// Close flushes all trades to the database and prevents any future trading.
-func (db *DB) Close() (err error) {
-	defer func() {
-		err = db.sql.Close()
-	}()
-
-	if err := db.Flush(); err != nil {
-		return err
+// Add stores a trade into the buffer. Once the buffer is full, the
+// trades are flushed to the database.
+func (db *DB) Add(trade Trade) error {
+	if len(db.buffer) == cap(db.buffer) {
+		return errors.New("trades buffer is full")
 	}
 
-	if err := db.stmt.Close(); err != nil {
-		return err
+	db.buffer = append(db.buffer, trade)
+	if len(db.buffer) == cap(db.buffer) {
+		if err := db.Flush(); err != nil {
+			return fmt.Errorf("unable to flush trades: %w", err)
+		}
 	}
 
 	return nil
@@ -106,18 +108,22 @@ func (db *DB) Flush() error {
 	return tx.Commit()
 }
 
-// Add stores a trade into the buffer. Once the buffer is full, the
-// trades are flushed to the database.
-func (db *DB) Add(trade Trade) error {
-	if len(db.buffer) == cap(db.buffer) {
-		return errors.New("trades buffer is full")
-	}
-
-	db.buffer = append(db.buffer, trade)
-	if len(db.buffer) == cap(db.buffer) {
-		if err := db.Flush(); err != nil {
-			return fmt.Errorf("unable to flush trades: %w", err)
+// Close flushes all trades to the database and prevents any future trading.
+func (db *DB) Close() (err error) {
+	defer func() {
+		if cerr := db.sql.Close(); cerr != nil {
+			err = cerr
 		}
+	}()
+
+	defer func() {
+		if serr := db.stmt.Close(); serr != nil {
+			err = serr
+		}
+	}()
+
+	if err := db.Flush(); err != nil {
+		return err
 	}
 
 	return nil
