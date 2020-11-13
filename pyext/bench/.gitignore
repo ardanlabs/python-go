@@ -2,5 +2,6 @@ bench.h
 bench_pb2_grpc.py
 bench_pb2.py
 bench.so
-pb
+pb/outliers.pb.go
+py
 server
