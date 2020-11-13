@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ardanlabs/python-go/trades"
+	"github.com/ardanlabs/python-go/sqlite/trades"
 )
 
 func ExampleDB() {
@@ -19,13 +19,13 @@ func ExampleDB() {
 
 	const count = 10_000
 	for i := 0; i < count; i++ {
-		t := trades.Trade{
+		trade := trades.Trade{
 			Time:   time.Now(),
 			Symbol: "AAPL",
 			Price:  rand.Float64() * 200,
 			IsBuy:  i%2 == 0,
 		}
-		if err := db.AddTrade(t); err != nil {
+		if err := db.Add(trade); err != nil {
 			fmt.Println("ERROR: insert - ", err)
 			return
 		}
