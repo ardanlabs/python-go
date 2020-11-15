@@ -8,6 +8,7 @@ COPY ./testdata/logs /tmp/logs
 WORKDIR /code
 COPY . .
 COPY example.py /tmp
+RUN go mod init github.com/ardanlabs/python-go/pyext
 RUN python setup.py sdist
 RUN python setup.py bdist_wheel
 WORKDIR /tmp

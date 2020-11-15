@@ -8,5 +8,6 @@ RUN python -m pip install --upgrade pip
 COPY ./testdata/logs /tmp/logs
 WORKDIR /code
 COPY . .
+RUN go mod init github.com/ardanlabs/python-go/pyext
 RUN go build -buildmode=c-shared -o _checksig.so
 RUN python py_session.py
