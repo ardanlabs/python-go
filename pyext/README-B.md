@@ -75,7 +75,7 @@ Before we move on to the last part of building a Python module, we need to take 
 Here’s a simplified workflow of what’s Python’s [pip](https://pip.pypa.io/en/stable/) (the cousin of “go install” in the Go world) is doing when it’s installing a package:
 
 **Figure  2**  
-![](func-call.png)
+![](pip-install.png)
 
 
 Figure 2 shows a simplified flow chart of installing a Python package. If there’s a pre-built binary package (wheel) matching the current OS/architecture it’ll use it. Otherwise, it’ll download the sources and will build the package.
