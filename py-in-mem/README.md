@@ -206,7 +206,7 @@ Telling cgo where to find the numpy headers is tricky since numpy doesn’t come
 
 **Listing 8: Build commands**
 ```
-01 $ export CGO_CFLAGS="-I $(python -c 'import numpy; print(numpy.get_include())'"
+01 $ export CGO_CFLAGS="-I $(python -c 'import numpy; print(numpy.get_include())')"
 02 $ go build
 ```
 
