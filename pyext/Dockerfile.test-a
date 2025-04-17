@@ -1,13 +1,12 @@
 # Test docker file (used by CI)
-FROM python:3.8-slim
+FROM python:3.12-slim
 RUN apt-get update && apt-get install -y bzip2 curl gcc
-RUN curl -LO https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
-RUN tar xzf go1.14.4.linux-amd64.tar.gz
+RUN curl -LO https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
+RUN tar xzf go1.24.2.linux-amd64.tar.gz
 RUN ln -s /go/bin/go /usr/local/bin
 RUN python -m pip install --upgrade pip
 COPY ./testdata/logs /tmp/logs
 WORKDIR /code
 COPY . .
-RUN go mod init github.com/ardanlabs/python-go/pyext
 RUN go build -buildmode=c-shared -o _checksig.so
 RUN python py_session.py

@@ -10,7 +10,7 @@ import (
 
 /*
 #cgo pkg-config: python3
-#cgo LDFLAGS: -lpython3.11
+#cgo LDFLAGS: -lpython3.13
 
 #include "glue.h"
 */
